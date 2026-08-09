@@ -1,0 +1,1 @@
+﻿# Iconografía de la app

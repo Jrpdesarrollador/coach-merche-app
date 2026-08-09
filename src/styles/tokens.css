@@ -1,0 +1,89 @@
+:root {
+  /* Backgrounds */
+  --background-primary: #0a0a0a;
+  --background-secondary: #121212;
+  --surface-primary: #171717;
+  --surface-elevated: #1f1f1f;
+
+  /* Brand */
+  --brand-black: #0a0a0a;
+  --brand-charcoal: #141414;
+  --brand-green-deep: #0d1f12;
+  --brand-lime: #b6ff00;
+  --brand-gold: #d4af37;
+  --brand-white: #ffffff;
+  --brand-off-white: #f4f4f1;
+
+  /* Text */
+  --text-primary: #f7f7f5;
+  --text-secondary: #c8c8c2;
+  --text-muted: #8a8a84;
+
+  /* Feedback */
+  --success: #b6ff00;
+  --warning: #e8c547;
+  --danger: #ff5c5c;
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(182, 255, 0, 0.35);
+  --border-gold: rgba(212, 175, 55, 0.45);
+
+  /* Radii */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  /* Shadows */
+  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-premium: 0 12px 40px rgba(0, 0, 0, 0.55);
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Typography */
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+
+  /* Motion */
+  --transition-fast: 150ms ease;
+  --transition-base: 220ms ease;
+  --transition-slow: 320ms ease;
+
+  /* Layout */
+  --app-max-width: 430px;
+  --bottom-nav-height: 4.5rem;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+/* Tokens Tailwind (@theme) sin referencias circulares */
+@theme inline {
+  --color-background-primary: var(--background-primary);
+  --color-background-secondary: var(--background-secondary);
+  --color-surface-primary: var(--surface-primary);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-brand-lime: var(--brand-lime);
+  --color-brand-gold: var(--brand-gold);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+}
