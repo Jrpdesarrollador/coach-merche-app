@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Logo } from '@/components/brand'
 import { Card } from '@/components/ui'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { SupabaseConfigNotice } from './SupabaseConfigNotice'
@@ -16,12 +17,7 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
     <main className="flex min-h-svh justify-center px-4 pt-[calc(var(--safe-top)+3rem)] pb-[calc(var(--safe-bottom)+2.5rem)]">
       <div className="flex w-full max-w-[var(--app-max-width)] flex-col gap-7">
         <header className="flex flex-col items-center gap-3 text-center">
-          <span
-            aria-hidden
-            className="inline-flex size-14 items-center justify-center rounded-xl border border-line-gold bg-surface font-display text-lg tracking-[0.08em] text-gold"
-          >
-            CM
-          </span>
+          <Logo size="md" decorative priority />
           <div className="flex flex-col gap-1">
             <p className="font-display text-sm tracking-[0.26em] text-ink uppercase">
               Coach Merche
