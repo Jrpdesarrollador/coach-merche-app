@@ -1,10 +1,20 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import {
+  findSupabaseConfigProblems,
+  formatSupabaseConfigWarning,
+} from '@/lib/supabaseConfig'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+const configProblems = findSupabaseConfigProblems(supabaseUrl, supabaseAnonKey)
+
+export const isSupabaseConfigured = configProblems.length === 0
+
+if (!isSupabaseConfigured) {
+  console.warn(formatSupabaseConfigWarning(configProblems))
+}
 
 /**
  * Cliente Supabase centralizado y tipado.

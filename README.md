@@ -34,7 +34,7 @@ Completa en `.env.local`:
 | `npm run format:check` | Prettier (verificación)                                                 |
 | `npm run db:validate`  | Migraciones + reglas de negocio en PostgreSQL en memoria (sin red)      |
 | `npm run db:login`     | Autentica el CLI de Supabase en tu cuenta (abre el navegador)           |
-| `npm run db:link`      | Enlaza esta carpeta con tu proyecto de Supabase en la nube              |
+| `npm run db:link`      | Enlaza esta carpeta con el proyecto de Supabase de Coach Merche         |
 | `npm run db:status`    | Lista qué migraciones están aplicadas en el proyecto remoto y cuáles no |
 | `npm run db:push:dry`  | Simula el push: muestra qué migraciones se aplicarían, sin aplicarlas   |
 | `npm run db:push`      | Aplica las migraciones pendientes al proyecto remoto                    |
@@ -168,11 +168,18 @@ npx supabase login
 
 #### Paso 3 — Enlazar el proyecto remoto
 
-Sustituye `<PROJECT_REF>` por el tuyo. El CLI pedirá la contraseña de la base de
-datos:
+El script ya apunta al proyecto de Coach Merche. El CLI pedirá la contraseña de
+la base de datos:
 
 ```bash
-npx supabase link --project-ref <PROJECT_REF>
+npm run db:link
+```
+
+Si alguna vez necesitas enlazar otro proyecto (por ejemplo uno de pruebas),
+pásale su ref directamente al CLI:
+
+```bash
+npx supabase link --project-ref <OTRO_PROJECT_REF>
 ```
 
 Esto guarda el enlace en `supabase/.temp/` (ignorado por git). A partir de aquí,

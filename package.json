@@ -11,7 +11,7 @@
     "format:check": "prettier --check .",
     "db:validate": "node scripts/validate-migrations.mjs",
     "db:login": "supabase login",
-    "db:link": "supabase link",
+    "db:link": "supabase link --project-ref olcqupciiqaifgybfidf",
     "db:status": "supabase migration list --linked",
     "db:push:dry": "supabase db push --linked --dry-run",
     "db:push": "supabase db push --linked",
