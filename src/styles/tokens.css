@@ -38,21 +38,11 @@
   /* Shadows */
   --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.35);
   --shadow-premium: 0 12px 40px rgba(0, 0, 0, 0.55);
-
-  /* Spacing scale */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-10: 2.5rem;
-  --space-12: 3rem;
+  --shadow-lime: 0 0 0 1px rgba(182, 255, 0, 0.25), 0 8px 30px rgba(182, 255, 0, 0.12);
 
   /* Typography */
-  --font-display: 'Syne', sans-serif;
-  --font-body: 'DM Sans', sans-serif;
+  --font-display: 'Syne', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
 
   /* Motion */
   --transition-fast: 150ms ease;
@@ -61,29 +51,90 @@
 
   /* Layout */
   --app-max-width: 430px;
-  --bottom-nav-height: 4.5rem;
+  --bottom-nav-height: 4.25rem;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
 }
 
-/* Tokens Tailwind (@theme) sin referencias circulares */
+/*
+ * Puente entre los design tokens y las utilidades Tailwind.
+ * Los valores literales evitan referencias circulares con :root.
+ */
 @theme inline {
-  --color-background-primary: var(--background-primary);
-  --color-background-secondary: var(--background-secondary);
-  --color-surface-primary: var(--surface-primary);
-  --color-surface-elevated: var(--surface-elevated);
-  --color-brand-lime: var(--brand-lime);
-  --color-brand-gold: var(--brand-gold);
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted: var(--text-muted);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-danger: var(--danger);
-  --font-display: 'Syne', sans-serif;
-  --font-body: 'DM Sans', sans-serif;
+  --color-bg-primary: #0a0a0a;
+  --color-bg-secondary: #121212;
+  --color-surface: #171717;
+  --color-surface-elevated: #1f1f1f;
+
+  --color-lime: #b6ff00;
+  --color-gold: #d4af37;
+  --color-green-deep: #0d1f12;
+
+  --color-ink: #f7f7f5;
+  --color-ink-soft: #c8c8c2;
+  --color-ink-muted: #8a8a84;
+
+  --color-success: #b6ff00;
+  --color-warning: #e8c547;
+  --color-danger: #ff5c5c;
+
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-lime: rgba(182, 255, 0, 0.35);
+  --color-line-gold: rgba(212, 175, 55, 0.45);
+
+  --font-display: 'Syne', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
+
+  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-premium: 0 12px 40px rgba(0, 0, 0, 0.55);
+
+  --animate-fade-in: fade-in var(--transition-base) both;
+  --animate-slide-up: slide-up var(--transition-slow) both;
+  --animate-scale-in: scale-in var(--transition-base) both;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: -200% 0;
+    }
+    to {
+      background-position: 200% 0;
+    }
+  }
 }

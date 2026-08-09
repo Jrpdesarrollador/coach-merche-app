@@ -15,5 +15,4 @@ export const supabase: SupabaseClient = createClient(
   supabaseAnonKey || 'placeholder-anon-key',
 )
 
-export const appTimezone =
-  import.meta.env.VITE_APP_TIMEZONE || 'Europe/Madrid'
+export const appTimezone = import.meta.env.VITE_APP_TIMEZONE || 'Europe/Madrid'

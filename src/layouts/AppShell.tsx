@@ -1,18 +1,14 @@
-import type { ReactNode } from 'react'
 import { Outlet } from 'react-router-dom'
+import { BottomNavigation } from '@/components/navigation/BottomNavigation'
 
-interface AppShellProps {
-  children?: ReactNode
-}
-
-/**
- * Shell móvil base (Fase 0).
- * BottomNavigation y TopBar se añadirán en Fase 1 (Design System).
- */
-export function AppShell({ children }: AppShellProps) {
+/** Shell móvil: contenido centrado a ancho de móvil + navegación inferior fija. */
+export function AppShell() {
   return (
-    <div className="mx-auto flex min-h-svh w-full max-w-[var(--app-max-width)] flex-col bg-transparent px-4 pb-[calc(var(--safe-bottom)+1.5rem)] pt-[calc(var(--safe-top)+1rem)]">
-      <main className="flex flex-1 flex-col">{children ?? <Outlet />}</main>
+    <div className="min-h-svh">
+      <div className="mx-auto flex min-h-svh w-full max-w-[var(--app-max-width)] flex-col px-4 pt-[var(--safe-top)] pb-[calc(var(--bottom-nav-height)+var(--safe-bottom)+1.5rem)]">
+        <Outlet />
+      </div>
+      <BottomNavigation />
     </div>
   )
 }

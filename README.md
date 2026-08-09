@@ -24,14 +24,14 @@ Completa en `.env.local`:
 
 ## Scripts
 
-| Script | Descripción |
-| --- | --- |
-| `npm run dev` | Servidor de desarrollo |
-| `npm run build` | Build de producción + typecheck |
-| `npm run preview` | Vista previa del build |
-| `npm run lint` | Oxlint |
-| `npm run format` | Prettier (escritura) |
-| `npm run format:check` | Prettier (verificación) |
+| Script                 | Descripción                     |
+| ---------------------- | ------------------------------- |
+| `npm run dev`          | Servidor de desarrollo          |
+| `npm run build`        | Build de producción + typecheck |
+| `npm run preview`      | Vista previa del build          |
+| `npm run lint`         | Oxlint                          |
+| `npm run format`       | Prettier (escritura)            |
+| `npm run format:check` | Prettier (verificación)         |
 
 ## Estructura
 
