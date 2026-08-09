@@ -5,12 +5,19 @@
   --surface-primary: #171717;
   --surface-elevated: #1f1f1f;
 
-  /* Brand */
+  /*
+   * Brand
+   * Colores muestreados sobre los carteles oficiales: el lima real es olivaceo
+   * (rango #94b800 - #b4d420) y el dorado del emblema es calido (#beaf54 - #e2ad44).
+   * Ambos superan 4.5:1 frente a #0a0a0a (lima 11.5:1, dorado 8.6:1), asi que
+   * valen para acento decorativo y para texto o fondo de boton primario sin
+   * necesitar una variante accesible aparte.
+   */
   --brand-black: #0a0a0a;
   --brand-charcoal: #141414;
-  --brand-green-deep: #0d1f12;
-  --brand-lime: #b6ff00;
-  --brand-gold: #d4af37;
+  --brand-green-deep: #1b2405;
+  --brand-lime: #aed419;
+  --brand-gold: #cfa63f;
   --brand-white: #ffffff;
   --brand-off-white: #f4f4f1;
 
@@ -20,14 +27,14 @@
   --text-muted: #8a8a84;
 
   /* Feedback */
-  --success: #b6ff00;
+  --success: #aed419;
   --warning: #e8c547;
   --danger: #ff5c5c;
 
   /* Borders */
   --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(182, 255, 0, 0.35);
-  --border-gold: rgba(212, 175, 55, 0.45);
+  --border-strong: rgba(174, 212, 25, 0.35);
+  --border-gold: rgba(207, 166, 63, 0.45);
 
   /* Radii */
   --radius-sm: 0.5rem;
@@ -38,7 +45,7 @@
   /* Shadows */
   --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.35);
   --shadow-premium: 0 12px 40px rgba(0, 0, 0, 0.55);
-  --shadow-lime: 0 0 0 1px rgba(182, 255, 0, 0.25), 0 8px 30px rgba(182, 255, 0, 0.12);
+  --shadow-lime: 0 0 0 1px rgba(174, 212, 25, 0.25), 0 8px 30px rgba(174, 212, 25, 0.12);
 
   /* Typography */
   --font-display: 'Syne', system-ui, sans-serif;
@@ -66,21 +73,21 @@
   --color-surface: #171717;
   --color-surface-elevated: #1f1f1f;
 
-  --color-lime: #b6ff00;
-  --color-gold: #d4af37;
-  --color-green-deep: #0d1f12;
+  --color-lime: #aed419;
+  --color-gold: #cfa63f;
+  --color-green-deep: #1b2405;
 
   --color-ink: #f7f7f5;
   --color-ink-soft: #c8c8c2;
   --color-ink-muted: #8a8a84;
 
-  --color-success: #b6ff00;
+  --color-success: #aed419;
   --color-warning: #e8c547;
   --color-danger: #ff5c5c;
 
   --color-line: rgba(255, 255, 255, 0.08);
-  --color-line-lime: rgba(182, 255, 0, 0.35);
-  --color-line-gold: rgba(212, 175, 55, 0.45);
+  --color-line-lime: rgba(174, 212, 25, 0.35);
+  --color-line-gold: rgba(207, 166, 63, 0.45);
 
   --font-display: 'Syne', system-ui, sans-serif;
   --font-body: 'DM Sans', system-ui, sans-serif;

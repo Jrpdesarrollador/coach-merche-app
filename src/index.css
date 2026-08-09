@@ -22,8 +22,8 @@
     margin: 0;
     font-family: var(--font-body);
     background:
-      radial-gradient(120% 80% at 50% -20%, rgba(182, 255, 0, 0.08), transparent 55%),
-      radial-gradient(80% 50% at 100% 0%, rgba(212, 175, 55, 0.06), transparent 45%),
+      radial-gradient(120% 80% at 50% -20%, rgba(174, 212, 25, 0.08), transparent 55%),
+      radial-gradient(80% 50% at 100% 0%, rgba(207, 166, 63, 0.06), transparent 45%),
       var(--background-primary);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
