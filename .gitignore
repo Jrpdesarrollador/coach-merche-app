@@ -32,3 +32,9 @@ dist-ssr
 # OS / misc
 coverage
 *.tsbuildinfo
+
+# Supabase CLI (config.toml, migrations/ y seed.sql SI se versionan)
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+supabase/.env.keys

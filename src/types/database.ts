@@ -1,9 +1,12 @@
 /**
  * Tipos de la base de datos Coach Merche.
  *
- * Escritos a mano para que coincidan con supabase/migrations. Cuando el
- * proyecto Supabase esté activo pueden regenerarse con:
- *   supabase gen types typescript --project-id <id> > src/types/database.ts
+ * Escritos a mano para que coincidan con supabase/migrations.
+ *
+ * Con el proyecto ya enlazado, `npm run db:types` genera la versión oficial en
+ * `src/types/database.generated.ts`. Se deja en un fichero aparte a propósito:
+ * este fichero es el que importa el código hoy, así que la migración a los
+ * tipos generados se hará de forma controlada comparando ambos.
  */
 
 export type UserRole = 'user' | 'admin'
@@ -49,6 +52,7 @@ export interface Database {
           phone?: string | null
           avatar_url?: string | null
         }
+        Relationships: []
       }
       workouts: {
         Row: {
@@ -76,6 +80,7 @@ export interface Database {
           active?: boolean
         }
         Update: Partial<Database['public']['Tables']['workouts']['Insert']>
+        Relationships: []
       }
       classes: {
         Row: {
@@ -103,6 +108,7 @@ export interface Database {
           created_by?: string | null
         }
         Update: Partial<Database['public']['Tables']['classes']['Insert']>
+        Relationships: []
       }
       class_bookings: {
         Row: {
@@ -120,6 +126,7 @@ export interface Database {
           status?: BookingStatus
         }
         Update: { status?: BookingStatus }
+        Relationships: []
       }
       attendance: {
         Row: {
@@ -140,6 +147,7 @@ export interface Database {
           confirmed_at?: string | null
         }
         Update: Partial<Database['public']['Tables']['attendance']['Insert']>
+        Relationships: []
       }
       posts: {
         Row: {
@@ -159,6 +167,7 @@ export interface Database {
           published?: boolean
         }
         Update: Partial<Database['public']['Tables']['posts']['Insert']>
+        Relationships: []
       }
       rewards: {
         Row: {
@@ -184,6 +193,7 @@ export interface Database {
           active?: boolean
         }
         Update: Partial<Database['public']['Tables']['rewards']['Insert']>
+        Relationships: []
       }
       user_rewards: {
         Row: {
@@ -204,6 +214,7 @@ export interface Database {
           status?: UserRewardStatus
           delivered_at?: string | null
         }
+        Relationships: []
       }
     }
     Views: {
@@ -214,6 +225,7 @@ export interface Database {
           booked_count: number
           available_count: number
         }
+        Relationships: []
       }
     }
     Functions: {
@@ -246,6 +258,11 @@ export interface Database {
         Returns: Database['public']['Tables']['user_rewards']['Row']
       }
     }
+    // El esquema no declara tipos enum ni compuestos: los valores cerrados
+    // (`role`, `status`, `difficulty`...) se validan con CHECK constraints y se
+    // representan arriba como uniones de string.
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }
 
