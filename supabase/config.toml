@@ -160,7 +160,19 @@ site_url = "http://localhost:5173"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["http://localhost:5173", "http://127.0.0.1:5173"]
+# Las entradas `/nueva-contrasena` son OBLIGATORIAS: es la pantalla a la que el
+# enlace del correo de recuperacion devuelve a la usuaria. El frontend envia
+# `${window.location.origin}/nueva-contrasena` como `redirectTo`, y Supabase
+# solo acepta URLs *exactas*, asi que sin ellas el enlace cae en el site_url y
+# la recuperacion de contrasena no funciona. No borrar.
+# La URL equivalente de PRODUCCION hay que darla de alta a mano en el panel
+# (Authentication -> URL Configuration): este fichero solo rige el entorno local.
+additional_redirect_urls = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:5173/nueva-contrasena",
+  "http://127.0.0.1:5173/nueva-contrasena",
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.

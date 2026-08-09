@@ -73,6 +73,48 @@ supabase/
   seed.sql      # datos iniciales
 ```
 
+## Rutas de la aplicación
+
+Las rutas están definidas en `src/routes/index.tsx`. Todas las direcciones están
+en español porque son visibles para las alumnas.
+
+| Ruta                | Pantalla                             | Acceso                            |
+| ------------------- | ------------------------------------ | --------------------------------- |
+| `/`                 | Inicio                               | Requiere sesión                   |
+| `/clases`           | Clases y reservas                    | Requiere sesión                   |
+| `/entrenamientos`   | Entrenamientos                       | Requiere sesión                   |
+| `/recompensas`      | Recompensas                          | Requiere sesión                   |
+| `/perfil`           | Perfil de la alumna                  | Requiere sesión                   |
+| `/gestion`          | Área de administración de Merche     | Requiere sesión **y** rol `admin` |
+| `/design`           | Validación interna del design system | Requiere sesión                   |
+| `/login`            | Iniciar sesión                       | Pública (solo sin sesión)         |
+| `/registro`         | Crear cuenta                         | Pública (solo sin sesión)         |
+| `/recuperar-acceso` | Pedir el correo de recuperación      | Pública (solo sin sesión)         |
+| `/nueva-contrasena` | Definir la contraseña nueva          | Pública                           |
+
+- **Pública (solo sin sesión):** si ya has iniciado sesión, la app te redirige a
+  la aplicación en lugar de mostrarte el formulario.
+- `/nueva-contrasena` es la única pantalla de acceso que **no** se bloquea con
+  sesión activa: el enlace del correo de recuperación abre la app ya con una
+  sesión temporal, así que la pantalla tiene que ser accesible en ese estado.
+- `/gestion` está protegida además por rol: una alumna que escriba la URL a mano
+  no entra.
+- `/design` es una pantalla interna de trabajo, no forma parte del producto que
+  ve la alumna.
+- Cualquier otra dirección dentro de la app muestra la pantalla de "no
+  encontrado".
+
+## Modo aviso sin configuración
+
+Si `.env.local` no tiene `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`, la app
+**arranca igualmente**: puedes navegar y ver la interfaz, pero las pantallas de
+acceso muestran un aviso claro de que todavía no hay conexión con el servidor y
+no se puede iniciar sesión ni registrarse.
+
+Esto es **intencionado**, no un fallo. Permite trabajar en el diseño y en las
+pantallas sin depender del backend. En cuanto rellenas las dos variables y
+reinicias `npm run dev`, el aviso desaparece y el acceso funciona con normalidad.
+
 ## Supabase
 
 ### Setup de Supabase con el CLI
@@ -187,10 +229,46 @@ proyecto remoto.
 > comparar ambos y migrar el código de forma controlada más adelante en lugar de
 > romper los imports de golpe.
 
-#### Paso 7 — Convertir a Merche en admin
+#### Paso 7 — URLs de redirección de autenticación
 
-Registra la cuenta de Merche desde la app y después, desde el **SQL Editor** del
-dashboard:
+Cuando una alumna pide recuperar su contraseña, Supabase le manda un correo con
+un enlace que debe devolverla a la pantalla `/nueva-contrasena`. La app pide esa
+redirección con la dirección desde la que se está usando (por ejemplo
+`http://localhost:5173/nueva-contrasena` en desarrollo).
+
+Supabase **solo acepta direcciones que estén autorizadas de antemano, y las
+compara exactas**. Si `/nueva-contrasena` no está en la lista, el enlace del
+correo deja a la usuaria en la portada y la recuperación no se puede terminar.
+
+- **En local** ya está resuelto: `supabase/config.toml` incluye esas direcciones
+  en `auth.additional_redirect_urls`. Hay un comentario en el fichero explicando
+  por qué están; no las borres.
+- **En producción hay que darlas de alta a mano.** `config.toml` solo gobierna el
+  entorno local del CLI, no el proyecto de la nube. En el dashboard, ve a
+  **Authentication → URL Configuration** y configura:
+  - **Site URL:** el dominio público de la app, por ejemplo
+    `https://coach-merche.vercel.app`.
+  - **Redirect URLs:** añade `https://coach-merche.vercel.app/nueva-contrasena`.
+
+Si además usas las URLs de vista previa de Vercel, cada dominio de preview
+necesitaría su propia entrada; lo habitual es probar la recuperación solo en
+local y en el dominio definitivo.
+
+#### Paso 8 — Convertir a Merche en admin
+
+Toda cuenta nueva se crea con `role = 'user'`. El primer administrador hay que
+crearlo desde el **SQL Editor** del dashboard de Supabase, y no desde la app.
+
+El motivo: la tabla `profiles` tiene un trigger de protección
+(`profiles_protect_role`) que rechaza cualquier cambio de `role` hecho desde una
+sesión de cliente si quien lo intenta no es ya admin. Como todavía no hay ningún
+admin, desde la app es imposible. En el SQL Editor no hay sesión de cliente, así
+que el trigger deja pasar el cambio: es la puerta prevista a propósito para este
+caso.
+
+1. Registra la cuenta de Merche desde la app, con su correo real.
+2. Abre el dashboard de Supabase → **SQL Editor** y ejecuta, sustituyendo el
+   correo:
 
 ```sql
 update public.profiles
@@ -198,9 +276,34 @@ set role = 'admin'
 where id = (select id from auth.users where email = 'EMAIL_DE_MERCHE');
 ```
 
-> El cambio de rol solo se permite sin sesión de cliente (SQL Editor o
-> `service_role`) o si quien lo hace ya es admin. Una alumna nunca puede
-> ascenderse a sí misma.
+3. Comprueba que ha funcionado:
+
+```sql
+select p.id, p.name, p.role, u.email
+from public.profiles p
+join auth.users u on u.id = p.id
+where p.role = 'admin';
+```
+
+4. Merche debe cerrar sesión y volver a entrar en la app para que se recargue su
+   perfil y aparezca el área de gestión.
+
+> A partir de aquí, un admin sí puede cambiar el rol de otras cuentas. Una alumna
+> nunca puede ascenderse a sí misma: el trigger lanza el error
+> `ROLE_CHANGE_NOT_ALLOWED`.
+
+#### Cómo se crea el perfil al registrarse
+
+El frontend **no inserta perfiles**, y de hecho no podría: la tabla `profiles` no
+tiene ninguna política de `INSERT` para el cliente. Lo hace la propia base de
+datos con el trigger `on_auth_user_created`, que se dispara al crearse el usuario
+en `auth.users` y crea la fila de `profiles` tomando el nombre de los metadatos
+que la app envía en el registro (si no llega ninguno, usa la parte del correo
+anterior a la `@`).
+
+Consecuencia práctica: si alguna vez creas una cuenta a mano desde el dashboard,
+su perfil se crea igualmente; y si ves una cuenta sin perfil, el problema está en
+el trigger, no en la app.
 
 #### Desarrollo local con Docker (opcional)
 
@@ -313,5 +416,5 @@ Colocar los archivos oficiales en `public/assets/brand/` cuando estén disponibl
 | 0 — Setup y arquitectura         | Completada                                                   |
 | 1 — Design System                | Completada                                                   |
 | 2 — Supabase (esquema, RLS, RPC) | Migraciones listas, pendiente de aplicar en el proyecto real |
-| 3 — Auth                         | Siguiente                                                    |
+| 3 — Auth                         | Completada                                                   |
 | 4–15                             | Pendientes                                                   |
