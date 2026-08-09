@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -6,13 +7,23 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
 /**
- * Cliente Supabase centralizado.
- * Sin variables de entorno válidas se crea un cliente placeholder
- * para no romper el arranque en Fase 0 (sin llamadas reales aún).
+ * Cliente Supabase centralizado y tipado.
+ *
+ * Sin variables de entorno se crea un cliente con valores de marcador para
+ * que la app arranque igualmente durante el desarrollo; cualquier llamada
+ * real fallará de forma controlada y `isSupabaseConfigured` permite
+ * avisar en la interfaz.
  */
-export const supabase: SupabaseClient = createClient(
+export const supabase: SupabaseClient<Database> = createClient<Database>(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-anon-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  },
 )
 
-export const appTimezone = import.meta.env.VITE_APP_TIMEZONE || 'Europe/Madrid'
+export const APP_TIMEZONE = import.meta.env.VITE_APP_TIMEZONE || 'Europe/Madrid'

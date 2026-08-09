@@ -32,6 +32,7 @@ Completa en `.env.local`:
 | `npm run lint`         | Oxlint                          |
 | `npm run format`       | Prettier (escritura)            |
 | `npm run format:check` | Prettier (verificación)         |
+| `npm run db:validate`  | Migraciones + reglas de negocio |
 
 ## Estructura
 
@@ -47,8 +48,11 @@ src/
   routes/
   services/     # acceso a datos centralizado
   styles/       # design tokens
-  types/
+  types/        # tipos de dominio y de la base de datos
   utils/
+
+scripts/
+  validate-migrations.mjs
 
 public/assets/
   brand/
@@ -61,9 +65,68 @@ supabase/migrations/
 
 ## Supabase
 
-Las migraciones (tablas, RLS, funciones RPC, índices) se añadirán en **Fase 2**.
+### Puesta en marcha
 
-Buckets previstos: `avatars`, `workouts`, `posts`.
+1. Crear un proyecto en [supabase.com](https://supabase.com) (región Europa).
+2. Copiar `Project URL` y `anon public key` a `.env.local`.
+3. Abrir el **SQL Editor** del proyecto y ejecutar, **en orden**, los ficheros de
+   `supabase/migrations/`.
+4. Ejecutar `supabase/seed.sql` para crear los niveles de recompensa iniciales.
+5. Registrar la cuenta de Merche desde la app y, después, convertirla en admin
+   desde el SQL Editor:
+
+```sql
+update public.profiles
+set role = 'admin'
+where id = (select id from auth.users where email = 'EMAIL_DE_MERCHE');
+```
+
+> El cambio de rol solo se permite sin sesión de cliente (SQL Editor o
+> `service_role`) o si quien lo hace ya es admin. Una alumna nunca puede
+> ascenderse a sí misma.
+
+### Esquema
+
+| Tabla            | Función                                                 |
+| ---------------- | ------------------------------------------------------- |
+| `profiles`       | Perfil vinculado a `auth.users`, con `role`             |
+| `workouts`       | Entrenamientos y sus carteles                           |
+| `classes`        | Clases programadas                                      |
+| `class_bookings` | Reservas, `UNIQUE(class_id, user_id)`                   |
+| `attendance`     | Asistencia confirmada, `UNIQUE(class_id, user_id)`      |
+| `posts`          | Publicaciones                                           |
+| `rewards`        | Niveles de recompensa configurables                     |
+| `user_rewards`   | Recompensas desbloqueadas, `UNIQUE(user_id, reward_id)` |
+
+Vista `class_availability`: plazas ocupadas y libres por clase, sin exponer
+quién está apuntada.
+
+### Operaciones críticas (RPC)
+
+Las operaciones sensibles no se resuelven en el frontend:
+
+| Función                                                | Qué garantiza                                                                                                                                                                        |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `book_class(p_class_id)`                               | Bloquea la fila de la clase (`FOR UPDATE`), de modo que dos alumnas no puedan ocupar a la vez la última plaza. Rechaza doble reserva, aforo completo, clase cancelada y clase pasada |
+| `cancel_booking(p_class_id)`                           | Cancela solo la reserva propia                                                                                                                                                       |
+| `confirm_class_attendance(p_class_id, p_attendee_ids)` | Registra la asistencia de toda la clase, la cierra y desbloquea recompensas                                                                                                          |
+| `sync_user_rewards(p_user_id)`                         | Desbloquea recompensas alcanzadas sin duplicar                                                                                                                                       |
+| `mark_reward_delivered(p_user_reward_id)`              | Marca un premio físico como entregado                                                                                                                                                |
+
+El contador de entrenamientos **solo** se deriva de `attendance.attended = true`.
+
+### Storage
+
+Buckets: `avatars` (cada alumna escribe en su carpeta `{user_id}/`), `workouts` y
+`posts` (escritura solo admin). Lectura pública, límite de tamaño y MIME types
+restringidos a imágenes.
+
+### Validación local
+
+`npm run db:validate` levanta un PostgreSQL en memoria (PGlite), aplica todas las
+migraciones y el seed, y comprueba las reglas críticas: aforo, doble reserva,
+clase pasada o cancelada, aislamiento entre alumnas, permisos de admin, contador
+de entrenamientos y desbloqueo de recompensas sin duplicados.
 
 ## Desarrollo local
 
@@ -93,6 +156,10 @@ Colocar los archivos oficiales en `public/assets/brand/` cuando estén disponibl
 
 ## Fases
 
-Ver plan de implementación en el prompt maestro del proyecto (Fases 0–15).
-
-Fase actual de base: **0 — Setup y arquitectura**.
+| Fase                             | Estado                                                       |
+| -------------------------------- | ------------------------------------------------------------ |
+| 0 — Setup y arquitectura         | Completada                                                   |
+| 1 — Design System                | Completada                                                   |
+| 2 — Supabase (esquema, RLS, RPC) | Migraciones listas, pendiente de aplicar en el proyecto real |
+| 3 — Auth                         | Siguiente                                                    |
+| 4–15                             | Pendientes                                                   |

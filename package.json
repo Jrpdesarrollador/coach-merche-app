@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "db:validate": "node scripts/validate-migrations.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -18,6 +19,7 @@
     "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.4",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
