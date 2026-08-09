@@ -28,8 +28,8 @@ export function Logo({
   return (
     <img
       src={LOGO_SRC}
-      width={512}
-      height={512}
+      width={1024}
+      height={1024}
       alt={decorative ? '' : 'Coach Merche'}
       aria-hidden={decorative || undefined}
       loading={priority ? 'eager' : 'lazy'}
