@@ -12,8 +12,13 @@ interface SignUpInput extends Credentials {
 }
 
 export interface SignUpOutcome {
-  /** El registro ha quedado a la espera de que confirme el email. */
+  /**
+   * `true` cuando Supabase no ha devuelto sesión (p. ej. confirmación por
+   * email activada). Se deduce de la respuesta, no de un flag de configuración.
+   */
   needsEmailConfirmation: boolean
+  /** Sesión inmediata si el proyecto confirma el email al registrarse. */
+  session: Session | null
 }
 
 /** Ruta a la que apunta el enlace del correo de recuperación. */
@@ -50,6 +55,12 @@ function onSessionChange(listener: (session: Session | null) => void): () => voi
  * El perfil de `public.profiles` lo crea el trigger `on_auth_user_created` a
  * partir de `raw_user_meta_data.name`, por eso el nombre viaja en `options.data`
  * y el cliente no inserta nada en la tabla.
+ *
+ * Comportamiento según el proyecto:
+ * - Confirmación desactivada → `session` inmediata.
+ * - Confirmación activada → `session` null (hay que revisar el correo).
+ * - Email duplicado → error explícito si la confirmación está off; si está on,
+ *   Supabase puede devolver un usuario fantasma sin identidades.
  */
 async function signUp({ name, email, password }: SignUpInput): Promise<SignUpOutcome> {
   assertConfigured()
@@ -61,13 +72,16 @@ async function signUp({ name, email, password }: SignUpInput): Promise<SignUpOut
   })
   if (error) throw serviceError(error)
 
-  // Con la confirmación por email activada, Supabase devuelve un usuario sin
-  // identidades cuando el email ya existe, en lugar de un error explícito.
+  // Duplicado con confirmación activada: usuario ofuscado sin identidades.
+  // Con confirmación off, Supabase ya responde con email_exists / user_already_exists.
   if (data.user && data.user.identities?.length === 0) {
     throw new ServiceError('Ya existe una cuenta con este email.')
   }
 
-  return { needsEmailConfirmation: data.session === null }
+  return {
+    needsEmailConfirmation: data.session === null,
+    session: data.session,
+  }
 }
 
 async function signIn({ email, password }: Credentials): Promise<Session> {

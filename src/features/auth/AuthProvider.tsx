@@ -91,7 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (credentials: SignUpCredentials) => {
     try {
-      const { needsEmailConfirmation } = await authService.signUp(credentials)
+      const { needsEmailConfirmation, session: nextSession } =
+        await authService.signUp(credentials)
+      // Evita una carrera al navegar a rutas protegidas antes de que
+      // onAuthStateChange haya pintado la sesión en el contexto.
+      if (nextSession) setSession(nextSession)
       return { error: null, needsEmailConfirmation }
     } catch (error) {
       return { error: toFriendlyMessage(error), needsEmailConfirmation: false }
@@ -100,7 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (credentials: AuthCredentials) => {
     try {
-      await authService.signIn(credentials)
+      const nextSession = await authService.signIn(credentials)
+      if (nextSession) setSession(nextSession)
       return { error: null }
     } catch (error) {
       return { error: toFriendlyMessage(error) }

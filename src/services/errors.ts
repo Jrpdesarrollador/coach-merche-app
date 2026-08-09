@@ -61,6 +61,12 @@ const messagesByFragment: [string, string][] = [
   ['email not confirmed', 'Todavía no has confirmado tu email. Revisa tu correo.'],
   ['user already registered', 'Ya existe una cuenta con este email.'],
   ['already been registered', 'Ya existe una cuenta con este email.'],
+  ['email address already registered', 'Ya existe una cuenta con este email.'],
+  [
+    'a user with this email address has already been registered',
+    'Ya existe una cuenta con este email.',
+  ],
+
   ['password should be at least', 'La contraseña es demasiado corta.'],
   ['unable to validate email', 'Ese email no parece válido.'],
   ['for security purposes', 'Espera unos segundos antes de volver a intentarlo.'],

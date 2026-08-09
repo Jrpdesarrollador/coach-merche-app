@@ -52,7 +52,7 @@ export function RegisterPage() {
     }
 
     if (needsEmailConfirmation) {
-      showToast('Te hemos enviado un correo para confirmar tu cuenta.')
+      showToast('Revisa tu correo para confirmar tu cuenta.')
       navigate('/login', { replace: true })
       return
     }
