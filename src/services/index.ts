@@ -1,7 +1,15 @@
 /**
  * Capa de servicios centralizada.
- * Las consultas a Supabase se organizarán aquí por dominio
- * (auth, classes, bookings, workouts, posts, rewards, attendance, profiles).
+ * Toda consulta a Supabase vive aquí, organizada por dominio
+ * (auth, profiles y, en fases siguientes, classes, bookings, workouts,
+ * posts, rewards y attendance). Los componentes nunca llaman a `supabase`.
  */
 
-export {}
+export { authService, type SignUpOutcome } from './authService'
+export { profileService, type ProfileUpdate } from './profileService'
+export {
+  ServiceError,
+  SUPABASE_NOT_CONFIGURED_MESSAGE,
+  serviceError,
+  toFriendlyMessage,
+} from './errors'
