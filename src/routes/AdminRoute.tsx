@@ -9,10 +9,10 @@ import { SessionLoader } from './SessionLoader'
  * permiso será rechazado igualmente por las políticas RLS de la base de datos.
  */
 export function AdminRoute() {
-  const { isAdmin, loading } = useAuth()
+  const { effectiveIsAdmin, loading } = useAuth()
 
   if (loading) return <SessionLoader />
-  if (!isAdmin) return <Navigate to="/" replace />
+  if (!effectiveIsAdmin) return <Navigate to="/" replace />
 
   return <Outlet />
 }

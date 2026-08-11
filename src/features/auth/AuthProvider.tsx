@@ -9,6 +9,13 @@ import {
   type AuthCredentials,
   type SignUpCredentials,
 } from './authContext'
+import {
+  defaultViewMode,
+  isEmailInViewModeAllowlist,
+  readStoredViewMode,
+  writeStoredViewMode,
+  type ViewMode,
+} from './viewMode'
 
 /** Perfil cargado junto al id al que pertenece, para detectar cargas obsoletas. */
 interface ProfileState {
@@ -22,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [sessionLoading, setSessionLoading] = useState(isSupabaseConfigured)
   const [profileState, setProfileState] = useState<ProfileState>(EMPTY_PROFILE_STATE)
+  const [viewMode, setViewModeState] = useState<ViewMode>('admin')
 
   const user = session?.user ?? null
   const userId = user?.id ?? null
@@ -78,6 +86,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       active = false
     }
   }, [userId])
+
+  useEffect(() => {
+    const currentProfile = profileState.userId === userId ? profileState.profile : null
+    if (!currentProfile) return
+
+    const stored = readStoredViewMode()
+    const mode = stored ?? defaultViewMode(currentProfile.role)
+    setViewModeState(mode)
+
+    if (!stored) writeStoredViewMode(mode)
+  }, [profileState, userId])
+
+  const setViewMode = useCallback((mode: ViewMode) => {
+    setViewModeState(mode)
+    writeStoredViewMode(mode)
+  }, [])
 
   const refreshProfile = useCallback(async () => {
     if (!userId) return
@@ -143,13 +167,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // termina, `profile` es null y `loading` sigue activo.
   const profile = profileState.userId === userId ? profileState.profile : null
   const loading = sessionLoading || (userId !== null && profileState.userId !== userId)
+  const isAdmin = profile?.role === 'admin'
+  const canSwitchViewMode = isAdmin && isEmailInViewModeAllowlist(user?.email)
+  const effectiveIsAdmin = isAdmin && viewMode === 'admin'
 
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
       user,
       profile,
-      isAdmin: profile?.role === 'admin',
+      isAdmin,
+      viewMode,
+      canSwitchViewMode,
+      effectiveIsAdmin,
+      setViewMode,
       loading,
       signUp,
       signIn,
@@ -162,6 +193,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user,
       profile,
+      isAdmin,
+      viewMode,
+      canSwitchViewMode,
+      effectiveIsAdmin,
+      setViewMode,
       loading,
       signUp,
       signIn,

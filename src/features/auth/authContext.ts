@@ -1,6 +1,7 @@
 import { createContext } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import type { Profile } from '@/types'
+import type { ViewMode } from './viewMode'
 
 /** Resultado de una acción de auth: `error` ya viene traducido al español. */
 export interface AuthActionResult {
@@ -25,10 +26,20 @@ export interface AuthContextValue {
   user: User | null
   profile: Profile | null
   /**
-   * Solo sirve para mostrar u ocultar interfaz. Los permisos reales los
-   * decide la base de datos con las políticas RLS, nunca el cliente.
+   * Rol real en BD (`profiles.role === 'admin'`). Usar para lógica que no
+   * dependa de la vista elegida; la UI y guards de rutas usan `effectiveIsAdmin`.
    */
   isAdmin: boolean
+  /** Vista elegida para la interfaz (persistida en localStorage). */
+  viewMode: ViewMode
+  /** Puede alternar vista admin/alumna (allowlist + rol admin en BD). */
+  canSwitchViewMode: boolean
+  /**
+   * Admin efectivo para UI y rutas: rol admin en BD y modo vista admin.
+   * Los permisos reales los decide RLS, nunca el cliente.
+   */
+  effectiveIsAdmin: boolean
+  setViewMode: (mode: ViewMode) => void
   loading: boolean
   signUp: (credentials: SignUpCredentials) => Promise<SignUpActionResult>
   signIn: (credentials: AuthCredentials) => Promise<AuthActionResult>

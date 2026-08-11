@@ -36,9 +36,9 @@ function buildGreeting(name: string, isAdmin: boolean): string {
 
 export function HomePage() {
   const navigate = useNavigate()
-  const { user, profile, isAdmin } = useAuth()
+  const { user, profile, effectiveIsAdmin } = useAuth()
   const { loading, error, notConfigured, data } = useHomeData(user?.id)
-  const greeting = buildGreeting(firstNameOf(profile?.name), isAdmin)
+  const greeting = buildGreeting(firstNameOf(profile?.name), effectiveIsAdmin)
 
   const nextClass = data?.nextClass ?? null
   const availability = nextClass?.availability

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { TopBar } from '@/components/navigation/TopBar'
 import {
   Avatar,
@@ -10,6 +11,7 @@ import {
   Input,
   Modal,
 } from '@/components/ui'
+import { ViewModeSwitcher } from '@/features/auth/ViewModeSwitcher'
 import { validateName } from '@/features/auth/validation'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
@@ -18,7 +20,8 @@ import { profileService, toFriendlyMessage } from '@/services'
 const EDIT_FORM_ID = 'profile-edit-form'
 
 export function ProfilePage() {
-  const { user, profile, isAdmin, signOut, refreshProfile } = useAuth()
+  const navigate = useNavigate()
+  const { user, profile, effectiveIsAdmin, signOut, refreshProfile } = useAuth()
   const { showToast } = useToast()
 
   const [editOpen, setEditOpen] = useState(false)
@@ -87,12 +90,26 @@ export function ProfilePage() {
             {user?.email && (
               <p className="text-sm break-all text-ink-muted">{user.email}</p>
             )}
-            {isAdmin && <Badge tone="gold">Entrenadora</Badge>}
+            {effectiveIsAdmin && <Badge tone="gold">Entrenadora</Badge>}
           </div>
           <Button variant="secondary" fullWidth onClick={openEditor}>
             Editar perfil
           </Button>
         </Card>
+
+        <ViewModeSwitcher />
+
+        {effectiveIsAdmin && (
+          <Card className="flex flex-col gap-3">
+            <CardLabel>Gestión</CardLabel>
+            <p className="text-sm leading-relaxed text-ink-muted">
+              Crea clases, pasa lista y entrega recompensas a tu comunidad.
+            </p>
+            <Button variant="gold" fullWidth onClick={() => navigate('/gestion')}>
+              Ir al panel de gestión
+            </Button>
+          </Card>
+        )}
 
         <Card className="flex flex-col gap-2">
           <CardLabel>Tu actividad</CardLabel>
