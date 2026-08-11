@@ -3,7 +3,7 @@ import { CheckIcon } from '@/components/icons'
 import { Badge, Button, Card, CardLabel, CardTitle } from '@/components/ui'
 import { formatClassDate, formatClassTime } from '@/utils/datetime'
 
-export type ClassBookingState = 'booked' | 'available' | 'full'
+export type ClassBookingState = 'booked' | 'available' | 'full' | 'past'
 
 interface ClassCardProps {
   title: string
@@ -16,6 +16,9 @@ interface ClassCardProps {
 
 interface ClassBookingStatusProps {
   state: ClassBookingState
+  classId?: string
+  bookingLoading?: boolean
+  onBook?: () => void
 }
 
 export function ClassCard({
@@ -48,7 +51,12 @@ export function ClassCard({
   )
 }
 
-export function ClassBookingStatus({ state }: ClassBookingStatusProps) {
+export function ClassBookingStatus({
+  state,
+  classId,
+  bookingLoading = false,
+  onBook,
+}: ClassBookingStatusProps) {
   const navigate = useNavigate()
 
   if (state === 'booked') {
@@ -62,9 +70,9 @@ export function ClassBookingStatus({ state }: ClassBookingStatusProps) {
           fullWidth
           variant="secondary"
           leadingIcon={<CheckIcon width={18} height={18} />}
-          disabled
+          onClick={() => classId && navigate(`/clases/${classId}`)}
         >
-          Plaza confirmada
+          Ver detalle
         </Button>
       </div>
     )
@@ -82,16 +90,35 @@ export function ClassBookingStatus({ state }: ClassBookingStatusProps) {
     )
   }
 
+  if (state === 'past') {
+    return (
+      <div className="flex flex-col gap-2">
+        <CardLabel>Tu reserva</CardLabel>
+        <p className="text-sm text-ink-muted">Esta clase ya ha pasado.</p>
+        <Button fullWidth variant="secondary" disabled>
+          Clase pasada
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <CardLabel>Tu reserva</CardLabel>
-      <p className="text-sm text-ink-muted">
-        Las reservas online llegarán muy pronto. De momento puedes ver el calendario
-        completo.
-      </p>
-      <Button fullWidth variant="secondary" onClick={() => navigate('/clases')}>
-        Ver clases
-      </Button>
+      <p className="text-sm text-ink-muted">Hay plazas libres. Apúntate cuando quieras.</p>
+      {onBook && classId ? (
+        <Button fullWidth loading={bookingLoading} onClick={onBook}>
+          Apuntarme
+        </Button>
+      ) : (
+        <Button
+          fullWidth
+          variant="secondary"
+          onClick={() => (classId ? navigate(`/clases/${classId}`) : navigate('/clases'))}
+        >
+          Ver clase
+        </Button>
+      )}
     </div>
   )
 }

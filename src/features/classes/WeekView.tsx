@@ -156,7 +156,13 @@ export function WeekView() {
                           location={item.class.location}
                           bookedCount={bookedCount}
                           capacity={capacity}
-                          badgeState={resolveClassListState(bookedCount, capacity, isBooked)}
+                          badgeState={resolveClassListState(
+                            item.class.date,
+                            item.class.start_time,
+                            bookedCount,
+                            capacity,
+                            isBooked,
+                          )}
                           onSelect={(id) => navigate(`/clases/${id}`)}
                         />
                       )

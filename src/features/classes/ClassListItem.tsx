@@ -1,6 +1,6 @@
 import type { ClassBookingState } from '@/features/home'
 import { Badge } from '@/components/ui'
-import { formatClassTime } from '@/utils/datetime'
+import { formatClassTime, isUpcomingClass } from '@/utils/datetime'
 
 export type ClassListBadgeState = ClassBookingState
 
@@ -15,15 +15,21 @@ export function ClassListBadge({ state }: ClassListBadgeProps) {
   if (state === 'full') {
     return <Badge tone="danger">Completa</Badge>
   }
+  if (state === 'past') {
+    return <Badge tone="neutral">Pasada</Badge>
+  }
   return <Badge tone="lime">Disponible</Badge>
 }
 
 export function resolveClassListState(
+  date: string,
+  startTime: string,
   bookedCount: number,
   capacity: number,
   isBooked: boolean,
 ): ClassListBadgeState {
   if (isBooked) return 'booked'
+  if (!isUpcomingClass(date, startTime)) return 'past'
   const available = Math.max(capacity - bookedCount, 0)
   if (available === 0) return 'full'
   return 'available'
@@ -71,7 +77,9 @@ export function ClassListItem({
       <p className="text-xs text-ink-soft">
         {badgeState === 'full'
           ? 'Sin plazas libres'
-          : `${availableCount} / ${capacity} plazas`}
+          : badgeState === 'past'
+            ? 'Clase pasada'
+            : `${availableCount} / ${capacity} plazas`}
       </p>
     </button>
   )

@@ -78,6 +78,15 @@ const messagesByFragment: [string, string][] = [
   ['network', NETWORK_MESSAGE],
   ['row-level security', 'No tienes permiso para hacer esto.'],
   ['role_change_not_allowed', 'No tienes permiso para cambiar el rol de una cuenta.'],
+
+  // Reservas (RPC book_class / cancel_booking)
+  ['auth_required', 'Tienes que iniciar sesión para reservar.'],
+  ['class_not_found', 'Esta clase ya no está disponible.'],
+  ['class_cancelled', 'Esta clase ha sido cancelada.'],
+  ['class_in_past', 'Esta clase ya ha pasado.'],
+  ['class_full', 'Lo sentimos, la clase está completa.'],
+  ['already_booked', 'Ya estás apuntada a esta clase.'],
+  ['booking_not_found', 'No tienes reserva activa en esta clase.'],
 ]
 
 function asSupabaseError(error: unknown): SupabaseErrorLike {

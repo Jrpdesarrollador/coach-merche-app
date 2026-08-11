@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { isSupabaseConfigured } from '@/lib/supabase'
-import type { ClassBookingState } from '@/features/home'
+import { resolveBookingState } from '@/features/home'
 import {
   classesService,
   toFriendlyMessage,
   type ClassWithWorkout,
 } from '@/services'
 import type { ClassBooking } from '@/types'
+import type { ClassBookingState } from '@/features/home'
 
 interface ClassDetailState {
   loading: boolean
@@ -15,25 +16,15 @@ interface ClassDetailState {
   classData: ClassWithWorkout | null
   booking: ClassBooking | null
   bookingState: ClassBookingState | null
-}
-
-function resolveBookingState(
-  classData: ClassWithWorkout | null,
-  booking: ClassBooking | null,
-): ClassBookingState | null {
-  if (!classData) return null
-  if (booking) return 'booked'
-
-  const available = classData.availability?.available_count
-  if (available === 0) return 'full'
-  return 'available'
+  refetch: () => void
 }
 
 export function useClassDetail(
   classId: string | undefined,
   userId: string | undefined,
 ): ClassDetailState {
-  const [state, setState] = useState<ClassDetailState>({
+  const [refreshToken, setRefreshToken] = useState(0)
+  const [state, setState] = useState<Omit<ClassDetailState, 'refetch'>>({
     loading: true,
     error: null,
     notConfigured: !isSupabaseConfigured,
@@ -41,6 +32,8 @@ export function useClassDetail(
     booking: null,
     bookingState: null,
   })
+
+  const refetch = useCallback(() => setRefreshToken((token) => token + 1), [])
 
   useEffect(() => {
     if (!classId) {
@@ -121,7 +114,7 @@ export function useClassDetail(
     return () => {
       cancelled = true
     }
-  }, [classId, userId])
+  }, [classId, userId, refreshToken])
 
-  return state
+  return { ...state, refetch }
 }

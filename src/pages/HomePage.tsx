@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarIcon, DumbbellIcon, AlertIcon } from '@/components/icons'
 import { TopBar } from '@/components/navigation/TopBar'
@@ -15,7 +16,8 @@ import {
 } from '@/features/home'
 import { useAuth } from '@/hooks/useAuth'
 import { useHomeData } from '@/hooks/useHomeData'
-import { SUPABASE_NOT_CONFIGURED_MESSAGE } from '@/services'
+import { useToast } from '@/hooks/useToast'
+import { SUPABASE_NOT_CONFIGURED_MESSAGE, bookingsService, toFriendlyMessage } from '@/services'
 
 function firstNameOf(fullName: string | undefined): string {
   return fullName?.trim().split(/\s+/)[0] ?? ''
@@ -37,11 +39,28 @@ function buildGreeting(name: string, isAdmin: boolean): string {
 export function HomePage() {
   const navigate = useNavigate()
   const { user, profile, effectiveIsAdmin } = useAuth()
-  const { loading, error, notConfigured, data } = useHomeData(user?.id)
+  const { showToast } = useToast()
+  const { loading, error, notConfigured, data, refetch } = useHomeData(user?.id)
+  const [bookingLoading, setBookingLoading] = useState(false)
   const greeting = buildGreeting(firstNameOf(profile?.name), effectiveIsAdmin)
 
   const nextClass = data?.nextClass ?? null
   const availability = nextClass?.availability
+
+  async function handleBookNextClass() {
+    if (!nextClass) return
+
+    setBookingLoading(true)
+    try {
+      await bookingsService.bookClass(nextClass.class.id)
+      showToast('¡Plaza reservada! Nos vemos en clase 💚', 'success')
+      refetch()
+    } catch (bookError) {
+      showToast(toFriendlyMessage(bookError), 'error')
+    } finally {
+      setBookingLoading(false)
+    }
+  }
 
   return (
     <>
@@ -84,7 +103,14 @@ export function HomePage() {
                   bookedCount={availability?.booked_count ?? 0}
                   capacity={availability?.capacity ?? nextClass.class.capacity}
                 />
-                {data?.bookingState && <ClassBookingStatus state={data.bookingState} />}
+                {data?.bookingState && (
+                  <ClassBookingStatus
+                    state={data.bookingState}
+                    classId={nextClass.class.id}
+                    bookingLoading={bookingLoading}
+                    onBook={handleBookNextClass}
+                  />
+                )}
               </Card>
             ) : (
               <Card highlight className="flex flex-col gap-3">

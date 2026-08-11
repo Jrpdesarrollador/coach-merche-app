@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PosterImage } from '@/components/brand'
 import { CheckIcon } from '@/components/icons'
@@ -6,10 +7,15 @@ import { Badge, Button, Card, CardLabel, EmptyState, SkeletonCard } from '@/comp
 import { useAuth } from '@/hooks/useAuth'
 import { useClassDetail } from '@/hooks/useClassDetail'
 import { useToast } from '@/hooks/useToast'
-import { SUPABASE_NOT_CONFIGURED_MESSAGE } from '@/services'
+import {
+  SUPABASE_NOT_CONFIGURED_MESSAGE,
+  bookingsService,
+  toFriendlyMessage,
+} from '@/services'
 import {
   formatClassTime,
   formatFullClassDate,
+  isUpcomingClass,
 } from '@/utils/datetime'
 
 export function ClassDetailPage() {
@@ -17,24 +23,48 @@ export function ClassDetailPage() {
   const navigate = useNavigate()
   const { user, effectiveIsAdmin } = useAuth()
   const { showToast } = useToast()
-  const { loading, error, notConfigured, classData, bookingState } = useClassDetail(
+  const { loading, error, notConfigured, classData, bookingState, refetch } = useClassDetail(
     classId,
     user?.id,
   )
+  const [actionLoading, setActionLoading] = useState<'book' | 'cancel' | null>(null)
 
   const availability = classData?.availability
   const bookedCount = availability?.booked_count ?? 0
   const capacity = availability?.capacity ?? classData?.class.capacity ?? 0
   const availableCount = Math.max(capacity - bookedCount, 0)
+  const isUpcoming = classData
+    ? isUpcomingClass(classData.class.date, classData.class.start_time)
+    : false
 
-  function handleBookClick() {
-    // Fase 6: llamar a book_class RPC vía bookingsService
-    showToast('Las reservas online llegarán muy pronto 💚', 'success')
+  async function handleBookClick() {
+    if (!classId) return
+
+    setActionLoading('book')
+    try {
+      await bookingsService.bookClass(classId)
+      showToast('¡Plaza reservada! Nos vemos en clase 💚', 'success')
+      refetch()
+    } catch (bookError) {
+      showToast(toFriendlyMessage(bookError), 'error')
+    } finally {
+      setActionLoading(null)
+    }
   }
 
-  function handleCancelClick() {
-    // Fase 6: llamar a cancel_booking RPC vía bookingsService
-    showToast('La cancelación online llegará muy pronto.', 'success')
+  async function handleCancelClick() {
+    if (!classId) return
+
+    setActionLoading('cancel')
+    try {
+      await bookingsService.cancelBooking(classId)
+      showToast('Reserva cancelada. ¡Te esperamos en otra clase!', 'success')
+      refetch()
+    } catch (cancelError) {
+      showToast(toFriendlyMessage(cancelError), 'error')
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   return (
@@ -110,15 +140,29 @@ export function ClassDetailPage() {
                   <Badge tone="lime" className="self-start">
                     Estás apuntada
                   </Badge>
-                  <Button
-                    fullWidth
-                    variant="secondary"
-                    leadingIcon={<CheckIcon width={18} height={18} />}
-                    disabled
-                    onClick={handleCancelClick}
-                  >
-                    Cancelar reserva — Próximamente
-                  </Button>
+                  {!isUpcoming && (
+                    <p className="text-sm text-ink-muted">Esta clase ya ha pasado.</p>
+                  )}
+                  {isUpcoming ? (
+                    <Button
+                      fullWidth
+                      variant="danger"
+                      loading={actionLoading === 'cancel'}
+                      disabled={actionLoading === 'book'}
+                      onClick={handleCancelClick}
+                    >
+                      Cancelar reserva
+                    </Button>
+                  ) : (
+                    <Button
+                      fullWidth
+                      variant="secondary"
+                      leadingIcon={<CheckIcon width={18} height={18} />}
+                      disabled
+                    >
+                      Plaza confirmada
+                    </Button>
+                  )}
                 </>
               )}
 
@@ -133,14 +177,27 @@ export function ClassDetailPage() {
                 </>
               )}
 
+              {bookingState === 'past' && (
+                <>
+                  <p className="text-sm text-ink-muted">Esta clase ya ha pasado.</p>
+                  <Button fullWidth variant="secondary" disabled>
+                    Clase pasada
+                  </Button>
+                </>
+              )}
+
               {bookingState === 'available' && (
                 <>
                   <p className="text-sm text-ink-muted">
-                    Podrás apuntarte online muy pronto. De momento puedes consultar
-                    horarios y plazas.
+                    Reserva tu plaza ahora. Te esperamos en clase.
                   </p>
-                  <Button fullWidth disabled onClick={handleBookClick}>
-                    Apuntarme — Muy pronto
+                  <Button
+                    fullWidth
+                    loading={actionLoading === 'book'}
+                    disabled={actionLoading === 'cancel'}
+                    onClick={handleBookClick}
+                  >
+                    Apuntarme
                   </Button>
                 </>
               )}

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { isSupabaseConfigured } from '@/lib/supabase'
-import type { ClassBookingState } from '@/features/home'
+import { resolveBookingState, type ClassBookingState } from '@/features/home'
 import {
   bookingsService,
   classesService,
@@ -27,27 +27,19 @@ interface HomeDataState {
   error: string | null
   notConfigured: boolean
   data: HomeData | null
-}
-
-function resolveBookingState(
-  nextClass: ClassWithWorkout | null,
-  booking: ClassBooking | null,
-): ClassBookingState | null {
-  if (!nextClass) return null
-  if (booking) return 'booked'
-
-  const available = nextClass.availability?.available_count
-  if (available === 0) return 'full'
-  return 'available'
+  refetch: () => void
 }
 
 export function useHomeData(userId: string | undefined): HomeDataState {
-  const [state, setState] = useState<HomeDataState>({
+  const [refreshToken, setRefreshToken] = useState(0)
+  const [state, setState] = useState<Omit<HomeDataState, 'refetch'>>({
     loading: true,
     error: null,
     notConfigured: !isSupabaseConfigured,
     data: null,
   })
+
+  const refetch = useCallback(() => setRefreshToken((token) => token + 1), [])
 
   useEffect(() => {
     if (!userId) {
@@ -118,7 +110,7 @@ export function useHomeData(userId: string | undefined): HomeDataState {
     return () => {
       cancelled = true
     }
-  }, [userId])
+  }, [userId, refreshToken])
 
-  return state
+  return { ...state, refetch }
 }
