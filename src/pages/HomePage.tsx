@@ -1,15 +1,21 @@
-import { Link } from 'react-router-dom'
-import { CalendarIcon, TrophyIcon } from '@/components/icons'
+import { useNavigate } from 'react-router-dom'
+import { CalendarIcon, DumbbellIcon, AlertIcon } from '@/components/icons'
 import { TopBar } from '@/components/navigation/TopBar'
+import { Button, Card, EmptyState } from '@/components/ui'
 import {
-  Button,
-  Card,
-  CardLabel,
-  CardTitle,
-  EmptyState,
-  ProgressBar,
-} from '@/components/ui'
+  ClassBookingStatus,
+  ClassCard,
+  ClassCardSkeleton,
+  PostCard,
+  PostCardSkeleton,
+  ProgressCard,
+  ProgressCardSkeleton,
+  WorkoutCard,
+  WorkoutCardSkeleton,
+} from '@/features/home'
 import { useAuth } from '@/hooks/useAuth'
+import { useHomeData } from '@/hooks/useHomeData'
+import { SUPABASE_NOT_CONFIGURED_MESSAGE } from '@/services'
 
 function firstNameOf(fullName: string | undefined): string {
   return fullName?.trim().split(/\s+/)[0] ?? ''
@@ -29,8 +35,13 @@ function buildGreeting(name: string, isAdmin: boolean): string {
 }
 
 export function HomePage() {
-  const { profile, isAdmin } = useAuth()
+  const navigate = useNavigate()
+  const { user, profile, isAdmin } = useAuth()
+  const { loading, error, notConfigured, data } = useHomeData(user?.id)
   const greeting = buildGreeting(firstNameOf(profile?.name), isAdmin)
+
+  const nextClass = data?.nextClass ?? null
+  const availability = nextClass?.availability
 
   return (
     <>
@@ -42,36 +53,95 @@ export function HomePage() {
           <p className="mt-1 text-sm text-ink-muted">Entrena tu mejor versión</p>
         </div>
 
-        <Card highlight className="flex flex-col gap-3">
-          <CardLabel>Próxima clase</CardLabel>
-          <EmptyState
-            title="Todavía no hay clases"
-            description="Merche está preparando lo próximo 💚"
-            icon={<CalendarIcon width={28} height={28} />}
-          />
-        </Card>
+        {notConfigured && (
+          <Card className="border-warning/35 bg-warning/5 text-sm text-ink-soft">
+            {SUPABASE_NOT_CONFIGURED_MESSAGE}
+          </Card>
+        )}
 
-        <Card className="flex flex-col gap-3">
-          <CardLabel>Tu progreso</CardLabel>
-          <div className="flex items-end justify-between gap-3">
-            <CardTitle className="text-3xl">0 entrenamientos</CardTitle>
-            <TrophyIcon width={26} height={26} className="text-gold" />
-          </div>
-          <ProgressBar value={0} max={1} label="Progreso hacia tu próxima recompensa" />
-          <p className="text-sm text-ink-muted">
-            Tu progreso se activará cuando Merche confirme tu primera asistencia.
-          </p>
-          <Button variant="secondary" fullWidth disabled>
-            Ver recompensas
-          </Button>
-        </Card>
+        {error && (
+          <Card className="border-danger/35 bg-danger/5 text-sm text-ink-soft">
+            {error}
+          </Card>
+        )}
 
-        <Link
-          to="/design"
-          className="text-center text-xs text-ink-muted underline decoration-dotted"
-        >
-          Ver sistema de diseño (interno)
-        </Link>
+        {loading ? (
+          <>
+            <ClassCardSkeleton />
+            <ProgressCardSkeleton />
+            <PostCardSkeleton />
+            <WorkoutCardSkeleton />
+          </>
+        ) : (
+          <>
+            {nextClass ? (
+              <Card highlight className="flex flex-col gap-4">
+                <ClassCard
+                  title={nextClass.workout.title}
+                  date={nextClass.class.date}
+                  startTime={nextClass.class.start_time}
+                  location={nextClass.class.location}
+                  bookedCount={availability?.booked_count ?? 0}
+                  capacity={availability?.capacity ?? nextClass.class.capacity}
+                />
+                {data?.bookingState && <ClassBookingStatus state={data.bookingState} />}
+              </Card>
+            ) : (
+              <Card highlight className="flex flex-col gap-3">
+                <EmptyState
+                  title="Todavía no hay clases"
+                  description={
+                    notConfigured
+                      ? 'Cuando conectemos el servidor verás aquí tu próxima sesión.'
+                      : 'Merche está preparando lo próximo 💚'
+                  }
+                  icon={<CalendarIcon width={28} height={28} />}
+                  action={
+                    !notConfigured ? (
+                      <Button variant="secondary" onClick={() => navigate('/clases')}>
+                        Ver calendario
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              </Card>
+            )}
+
+            {data?.progress ? (
+              <ProgressCard
+                workoutCount={data.progress.workoutCount}
+                nextReward={data.progress.nextReward}
+                highestReward={data.progress.highestReward}
+              />
+            ) : (
+              <ProgressCard workoutCount={0} nextReward={null} highestReward={null} />
+            )}
+
+            {data?.latestPost ? (
+              <PostCard post={data.latestPost} />
+            ) : (
+              <Card className="flex flex-col gap-3">
+                <EmptyState
+                  title="Sin novedades por ahora"
+                  description="Aquí aparecerán los avisos y novedades de Merche."
+                  icon={<AlertIcon width={28} height={28} />}
+                />
+              </Card>
+            )}
+
+            {data?.featuredWorkout ? (
+              <WorkoutCard workout={data.featuredWorkout} />
+            ) : (
+              <Card className="flex flex-col gap-3">
+                <EmptyState
+                  title="Biblioteca en camino"
+                  description="Aquí verás el entrenamiento destacado de Coach Merche."
+                  icon={<DumbbellIcon width={28} height={28} />}
+                />
+              </Card>
+            )}
+          </>
+        )}
       </section>
     </>
   )
