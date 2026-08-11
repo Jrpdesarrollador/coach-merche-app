@@ -654,8 +654,8 @@ http://127.0.0.1:5173/nueva-contrasena
 recuperación en preview, añade también `https://<preview-url>/nueva-contrasena`. Lo
 habitual es probar solo en local y en producción.
 
-**Dominio personalizado:** si cambias el dominio en Vercel, actualiza Site URL y
-Redirect URLs con el dominio nuevo.
+**Dominio personalizado:** si añades un dominio propio en Vercel, sigue la guía
+completa en [§6 Dominio propio](#6-dominio-propio) (Supabase, DNS y checklist).
 
 #### Plantillas de email (opcional)
 
@@ -698,10 +698,140 @@ Si no hay token de Vercel, usa el dashboard (pasos 1–3). El CLI no es obligato
 - [ ] Service worker registrado (DevTools → Application → Service Workers).
 - [ ] Merche/Jesús pueden acceder a `/gestion` con rol admin en Supabase.
 
-### 6. Dominio personalizado (opcional)
+### 6. Dominio propio
 
-En Vercel → **Settings → Domains** añade tu dominio (p. ej. `app.coachmerche.com`).
-Actualiza **Site URL** y **Redirect URLs** en Supabase con el dominio definitivo.
+Producción actual: **`https://coach-merche-app.vercel.app`** (funciona y puede
+seguir activa como respaldo). Esta guía explica cómo añadir un dominio propio sin
+tocar el código ni las variables de entorno de Vercel.
+
+#### Qué dominio elegir
+
+| Opción | Ejemplo | Cuándo usarlo |
+| ------ | ------- | ------------- |
+| Subdominio de marca | `app.coachmerche.com` | **Recomendado.** Separa la app del web corporativo (`coachmerche.com`). |
+| Subdominio genérico | `app.tudominio.com` | Si el dominio principal ya lo gestionáis (GoDaddy, Cloudflare, etc.). |
+| Dominio raíz | `coachmerche.es` | Solo si queréis que la app viva en la home del dominio (menos habitual). |
+| Subdominio `www` | `www.coachmerche.es` | Evitar para la PWA; los navegadores tratan `www` y sin `www` como orígenes distintos. |
+
+> Sustituye `app.tudominio.com` por el dominio real que elijáis. El resto de la guía
+> usa ese placeholder.
+
+#### Resumen rápido (3 pasos)
+
+```text
+1. Vercel  → Settings → Domains → añadir app.tudominio.com + DNS
+2. Supabase → Authentication → URL Configuration → Site URL + Redirect URLs
+3. Probar   → login, recuperar contraseña, instalar PWA
+```
+
+No hace falta **redeploy** en Vercel si solo cambiáis el dominio y las variables
+`VITE_*` siguen igual: el bundle ya funciona en cualquier origen HTTPS porque
+`redirectTo` usa `window.location.origin`.
+
+#### Paso 1 — Añadir el dominio en Vercel
+
+1. Entra en [vercel.com](https://vercel.com) → proyecto **coach-merche-app**.
+2. **Settings** → **Domains**.
+3. Escribe el dominio (p. ej. `app.tudominio.com`) → **Add**.
+4. Vercel muestra los registros DNS que debéis crear en vuestro proveedor
+   (GoDaddy, Cloudflare, Nominalia, etc.):
+
+| Tipo de dominio | Registro habitual | Valor (Vercel lo indica en pantalla) |
+| --------------- | ----------------- | ------------------------------------ |
+| Subdominio (`app.…`) | **CNAME** | `cname.vercel-dns.com` (o el que muestre Vercel) |
+| Raíz (`coachmerche.es`) | **A** | IP que indique Vercel (p. ej. `76.76.21.21`) |
+
+5. En el panel DNS de vuestro registrador, crea **exactamente** el registro que
+   pide Vercel. La propagación puede tardar unos minutos u horas.
+6. Vuelve a **Domains** en Vercel: cuando el estado pase a **Valid**, el dominio
+   está listo.
+7. **SSL:** Vercel emite el certificado HTTPS automáticamente (Let's Encrypt). No
+   hay que subir certificados ni tocar `vercel.json`.
+
+Opcional: dejad también `coach-merche-app.vercel.app` activo; Vercel puede redirigir
+el tráfico antiguo al dominio nuevo desde **Domains → … → Redirect**.
+
+#### Paso 2 — `vercel.json` y variables de entorno
+
+| Elemento | ¿Hay que cambiarlo? | Motivo |
+| -------- | ------------------- | ------ |
+| `vercel.json` | **No** | Los rewrites SPA, cabeceras PWA y build no dependen del hostname. |
+| Variables `VITE_*` en Vercel | **No** (salvo que uséis `VITE_APP_URL`) | Supabase URL y anon key son del proyecto cloud, no del dominio de la app. |
+| Redeploy | **No obligatorio** | Solo hace falta si cambiáis variables de entorno; un dominio nuevo no las invalida. |
+
+#### Paso 3 — PWA (`manifest.webmanifest`)
+
+El manifest usa rutas **relativas**, válidas en cualquier dominio:
+
+```json
+"start_url": "/",
+"scope": "/"
+```
+
+No hay que editar el manifest al cambiar de dominio. Tras instalar la PWA desde el
+nuevo dominio, el icono abrirá `https://app.tudominio.com/` automáticamente.
+
+> Si alguna usuaria tenía la PWA instalada desde `*.vercel.app`, debe **volver a
+> añadir a pantalla de inicio** desde el dominio nuevo (es otro origen para el SO).
+
+#### Paso 4 — Supabase Auth (obligatorio)
+
+Sin este paso, el login puede funcionar pero **la recuperación de contraseña fallará**
+(el enlace del correo no redirige al dominio nuevo).
+
+1. [supabase.com/dashboard](https://supabase.com/dashboard) → proyecto **Coach Merche**.
+2. **Authentication** → **URL Configuration**.
+3. **Site URL** — sustituid la URL de Vercel por la del dominio propio:
+
+```text
+https://app.tudominio.com
+```
+
+4. **Redirect URLs** — añadid la ruta de recuperación (mantened la de Vercel si
+   seguís probando en `*.vercel.app`):
+
+```text
+https://app.tudominio.com/nueva-contrasena
+https://coach-merche-app.vercel.app/nueva-contrasena
+```
+
+5. **Save**.
+
+#### Bloque copy-paste (dominio propio)
+
+| Campo | Valor exacto |
+| ----- | ------------ |
+| **Site URL** | `https://app.tudominio.com` |
+| **Redirect URLs** | `https://app.tudominio.com/nueva-contrasena` |
+
+> Sin barra final en Site URL. Supabase compara Redirect URLs **carácter a carácter**
+> con lo que envía la app (`origin` + `/nueva-contrasena`).
+
+#### Paso 5 — Checklist post-dominio
+
+Marca cada punto desde el **nuevo dominio** (`https://app.tudominio.com`):
+
+- [ ] La app carga en HTTPS (candado verde, sin aviso de certificado).
+- [ ] **Login** con una cuenta existente funciona.
+- [ ] **Registro** (si está abierto) crea perfil en Supabase.
+- [ ] **Recuperar contraseña:** `/recuperar-acceso` → correo → enlace abre
+      `/nueva-contrasena` en el dominio nuevo (no la portada ni `vercel.app`).
+- [ ] Rutas profundas (`/clases`, `/gestion`) cargan al refrescar (SPA rewrite).
+- [ ] **PWA:** «Añadir a pantalla de inicio» muestra icono y nombre «Coach Merche».
+- [ ] Service worker activo (DevTools → Application → Service Workers).
+- [ ] Panel admin `/gestion` accesible para cuentas con `role = admin`.
+- [ ] (Opcional) `npm run verify:production -- https://app.tudominio.com` →
+      `✅ Supabase configurado`.
+
+#### Solución de problemas
+
+| Síntoma | Qué revisar |
+| ------- | ----------- |
+| Dominio no resuelve | DNS: CNAME/A correcto; esperar propagación (hasta 48 h en casos raros). |
+| «Certificate pending» en Vercel | DNS aún no apunta a Vercel; corregir registro. |
+| Login OK, recuperación cae en portada | Falta `https://app.tudominio.com/nueva-contrasena` en Redirect URLs. |
+| PWA abre la URL antigua | Reinstalar desde el dominio nuevo (origen distinto). |
+| Aviso «no conectada con el servidor» | No es por el dominio: redeploy con `VITE_SUPABASE_*` (ver §2). |
 
 ## Assets de marca
 
