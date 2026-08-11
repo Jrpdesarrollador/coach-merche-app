@@ -13,7 +13,16 @@ export { classesService, type ClassWithWorkout } from './classesService'
 export { bookingsService } from './bookingsService'
 export { postsService } from './postsService'
 export { workoutsService } from './workoutsService'
-export { rewardsService, type RewardProgress } from './rewardsService'
+export {
+  rewardsService,
+  type AdminUserReward,
+  type PendingRewardDelivery,
+  type RewardDisplayState,
+  type RewardProgress,
+  type RewardWithStatus,
+  type RewardsOverview,
+} from './rewardsService'
+export { pushService, type PushSubscriptionPayload } from './pushService'
 export { notificationsService, type SendNotificationInput } from './notificationsService'
 export { manualAdminService, CLASS_PRICE_CENTS } from './manualAdminService'
 export { historyAdminService, type HistoryEntry, type HistoryEntryKind } from './historyAdminService'

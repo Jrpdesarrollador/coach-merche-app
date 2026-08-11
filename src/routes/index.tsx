@@ -12,6 +12,7 @@ import {
   AdminRegisterPage,
   AdminSettingsPage,
   AdminHistoryPage,
+  AdminRewardsPage,
   AdminUsersPage,
   AdminWorkoutsPage,
 } from '@/features/admin'
@@ -54,6 +55,7 @@ export function AppRouter() {
             <Route path="clases/:classId" element={<ClassDetailPage />} />
             <Route path="entrenamientos" element={<WorkoutsPage />} />
             <Route path="recompensas" element={<RewardsPage />} />
+            <Route path="logros" element={<RewardsPage />} />
             <Route path="perfil" element={<ProfilePage />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="design" element={<DesignSystemPage />} />
@@ -66,6 +68,7 @@ export function AppRouter() {
               <Route path="gestion/registrar" element={<AdminRegisterPage />} />
               <Route path="gestion/usuarios" element={<AdminUsersPage />} />
               <Route path="gestion/historial" element={<AdminHistoryPage />} />
+              <Route path="gestion/recompensas" element={<AdminRewardsPage />} />
               <Route path="gestion/clases" element={<AdminClassesPage />} />
               <Route path="gestion/clases/:id" element={<AdminClassDetailPage />} />
               <Route path="gestion/entrenos" element={<AdminWorkoutsPage />} />

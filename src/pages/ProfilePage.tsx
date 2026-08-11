@@ -13,6 +13,7 @@ import {
   Modal,
 } from '@/components/ui'
 import { ViewModeSwitcher } from '@/features/auth/ViewModeSwitcher'
+import { PushNotificationPrompt } from '@/features/pwa'
 import { validateName } from '@/features/auth/validation'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
@@ -110,6 +111,8 @@ export function ProfilePage() {
 
         <ViewModeSwitcher />
 
+        {!effectiveIsAdmin && <PushNotificationPrompt />}
+
         {effectiveIsAdmin && (
           <Card className="flex flex-col gap-3">
             <CardLabel>Gestión</CardLabel>
@@ -122,13 +125,17 @@ export function ProfilePage() {
           </Card>
         )}
 
-        <Card className="flex flex-col gap-2">
-          <CardLabel>Tu actividad</CardLabel>
-          <p className="text-sm leading-relaxed text-ink-muted">
-            Tus entrenamientos y tus recompensas aparecerán aquí en cuanto Merche empiece
-            a confirmar asistencias.
-          </p>
-        </Card>
+        {!effectiveIsAdmin && (
+          <Card className="flex flex-col gap-2">
+            <CardLabel>Tu actividad</CardLabel>
+            <p className="text-sm leading-relaxed text-ink-muted">
+              Consulta tus logros y recompensas en la pestaña Logros del menú inferior.
+            </p>
+            <Button variant="secondary" fullWidth onClick={() => navigate('/recompensas')}>
+              Ver mis logros
+            </Button>
+          </Card>
+        )}
 
         <Button variant="danger" fullWidth onClick={() => setConfirmOpen(true)}>
           Cerrar sesión

@@ -379,6 +379,26 @@ export interface Database {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          keys: Record<string, string>
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          keys: Record<string, string>
+        }
+        Update: {
+          keys?: Record<string, string>
+        }
+        Relationships: []
+      }
     }
     Views: {
       class_availability: {
@@ -423,6 +443,42 @@ export interface Database {
       notify_class_reminders: {
         Args: Record<string, never>
         Returns: number
+      }
+      upsert_push_subscription: {
+        Args: { p_endpoint: string; p_keys: Record<string, string> }
+        Returns: Database['public']['Tables']['push_subscriptions']['Row']
+      }
+      delete_push_subscription: {
+        Args: { p_endpoint: string }
+        Returns: boolean
+      }
+      admin_list_pending_rewards: {
+        Args: Record<string, never>
+        Returns: {
+          user_reward_id: string
+          user_id: string
+          user_name: string
+          user_last_name: string | null
+          reward_id: string
+          reward_name: string
+          reward_icon: string | null
+          required_workouts: number
+          unlocked_at: string
+        }[]
+      }
+      admin_get_user_rewards: {
+        Args: { p_user_id: string }
+        Returns: {
+          user_reward_id: string
+          reward_id: string
+          reward_name: string
+          reward_icon: string | null
+          reward_type: string
+          required_workouts: number
+          status: string
+          unlocked_at: string
+          delivered_at: string | null
+        }[]
       }
       admin_list_profiles: {
         Args: Record<string, never>

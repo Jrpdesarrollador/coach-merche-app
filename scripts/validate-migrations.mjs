@@ -489,8 +489,30 @@ async function runSmokeTests(db) {
     JSON.stringify(participants.rows),
   )
 
-  const reminderStub = await db.query(`select public.notify_class_reminders() as total`)
-  check('notify_class_reminders stub responde 0', reminderStub.rows[0].total === 0)
+  const reminderCount = await db.query(`select public.notify_class_reminders() as total`)
+  check(
+    'notify_class_reminders responde entero >= 0',
+    Number.isInteger(reminderCount.rows[0].total) && reminderCount.rows[0].total >= 0,
+  )
+
+  await signInAs(LAURA)
+  await db.query(`
+    select public.upsert_push_subscription(
+      'https://push.example/test-endpoint',
+      '{"p256dh":"abc","auth":"def"}'::jsonb
+    )
+  `)
+  const pushSubs = await db.query(
+    `select count(*)::int as total from public.push_subscriptions where user_id = '${LAURA}'`,
+  )
+  check('Alumna puede guardar suscripción push', pushSubs.rows[0].total === 1)
+
+  await signInAs(MERCHE)
+  const pendingRewards = await db.query(`select * from public.admin_list_pending_rewards()`)
+  check(
+    'Admin puede listar recompensas pendientes',
+    Array.isArray(pendingRewards.rows),
+  )
 
   // ---- Roles Basic/Pro y aprobación -------------------------------------
   await signInAs()

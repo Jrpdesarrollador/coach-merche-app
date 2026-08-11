@@ -8,6 +8,7 @@ export const adminNavGroups = [
       { to: '/gestion/registrar', label: 'Registrar', icon: '＋', end: false as const },
       { to: '/gestion/usuarios', label: 'Usuarios', icon: '👥', end: false as const },
       { to: '/gestion/historial', label: 'Historial', icon: '☷', end: false as const },
+      { to: '/gestion/recompensas', label: 'Recompensas', icon: '🏆', end: false as const },
       { to: '/gestion/pagos', label: 'Pagos', icon: '€', end: false as const },
       { to: '/gestion/configuracion', label: 'Ajustes', icon: '⚙', end: false as const },
       { to: '/gestion/informes', label: 'Informes', icon: '📊', end: false as const },
