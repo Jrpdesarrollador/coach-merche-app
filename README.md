@@ -259,15 +259,9 @@ correo deja a la usuaria en la portada y la recuperación no se puede terminar.
   en `auth.additional_redirect_urls`. Hay un comentario en el fichero explicando
   por qué están; no las borres.
 - **En producción hay que darlas de alta a mano.** `config.toml` solo gobierna el
-  entorno local del CLI, no el proyecto de la nube. En el dashboard, ve a
-  **Authentication → URL Configuration** y configura:
-  - **Site URL:** el dominio público de la app, por ejemplo
-    `https://coach-merche.vercel.app`.
-  - **Redirect URLs:** añade `https://coach-merche.vercel.app/nueva-contrasena`.
-
-Si además usas las URLs de vista previa de Vercel, cada dominio de preview
-necesitaría su propia entrada; lo habitual es probar la recuperación solo en
-local y en el dominio definitivo.
+  entorno local del CLI, no el proyecto de la nube. Copia las URLs exactas de la
+  sección [Supabase Auth — Producción](#3-supabase-auth--producción) (más abajo,
+  en Deploy Vercel).
 
 #### Paso 8 — Convertir a Merche en admin
 
@@ -602,36 +596,87 @@ configuradas.
 - Clave truncada al copiar/pegar (menos de 20 caracteres).
 - `service_role` key en lugar de la clave pública (nunca usar la secreta en `VITE_*`).
 
-### 3. Supabase Auth — URLs de producción
+### 3. Supabase Auth — Producción
 
-En el dashboard de Supabase → **Authentication → URL Configuration**:
+Configura esto **una vez** en el proyecto de Supabase en la nube. Sin estas URLs,
+el enlace del correo de recuperación cae en la portada y la alumna no puede terminar
+de cambiar la contraseña.
 
-| Campo            | Valor (sustituye por tu dominio)                    |
-| ---------------- | --------------------------------------------------- |
-| **Site URL**     | `https://coach-merche-app.vercel.app`               |
-| **Redirect URLs**| `https://coach-merche-app.vercel.app/nueva-contrasena` |
+#### Flujo de recuperación (cómo encaja con el código)
 
-Añade también la URL de callback de OAuth si usas proveedores externos:
+| Paso | Ruta / acción | Qué pasa |
+| ---- | ------------- | -------- |
+| 1 | `/recuperar-acceso` (`ForgotPasswordPage`) | La alumna escribe su email. |
+| 2 | `authService.resetPassword()` | Llama a `resetPasswordForEmail` con `redirectTo: ${window.location.origin}/nueva-contrasena`. En producción Vercel eso es `https://coach-merche-app.vercel.app/nueva-contrasena`. |
+| 3 | Correo de Supabase | Enlace con token → redirige a la URL anterior **solo si está en Redirect URLs**. |
+| 4 | `/nueva-contrasena` (`ResetPasswordPage`) | Supabase abre la app con sesión de recuperación; la alumna elige contraseña nueva. |
+
+No hay URLs fijas en el código: `redirectTo` usa siempre el origen del navegador
+(`window.location.origin`), así que en Vercel funciona sin variable de entorno extra.
+
+#### Pasos en el dashboard de Supabase
+
+1. Abre [supabase.com/dashboard](https://supabase.com/dashboard) → proyecto **Coach Merche**.
+2. Menú lateral → **Authentication** → pestaña **URL Configuration**.
+3. **Site URL** — pega y guarda:
 
 ```text
-https://coach-merche-app.vercel.app/**
+https://coach-merche-app.vercel.app
 ```
 
-> Sustituye `coach-merche-app` por el subdominio real que asigne Vercel al importar
-> el repo (p. ej. `coach-merche-app-jrpdesarrollador.vercel.app`). Las URLs deben
-> coincidir **exactamente** con el dominio público.
+4. **Redirect URLs** — añade **una línea por URL** (botón *Add URL*). Copia y pega:
 
-**Previews de Vercel:** cada rama/PR tiene su propio `*.vercel.app`. Si quieres probar
-recuperación de contraseña en preview, añade también
-`https://<preview-url>/nueva-contrasena` en Redirect URLs. Lo habitual es probar auth
-solo en local y en el dominio de producción.
+```text
+https://coach-merche-app.vercel.app/nueva-contrasena
+```
 
-**Desarrollo local** (ya configurado en `supabase/config.toml`):
+5. Pulsa **Save** al final de la página.
+
+> **Importante:** Supabase compara las redirect URLs **carácter a carácter**. Debe
+> coincidir exactamente con lo que envía la app (`origin` + `/nueva-contrasena`), sin
+> barra final extra.
+
+#### Bloque copy-paste (producción actual)
+
+| Campo | Valor exacto |
+| ----- | ------------ |
+| **Site URL** | `https://coach-merche-app.vercel.app` |
+| **Redirect URLs** | `https://coach-merche-app.vercel.app/nueva-contrasena` |
+
+**Desarrollo local** (ya en `supabase/config.toml`, no hace falta tocar el dashboard):
 
 ```text
 http://localhost:5173/nueva-contrasena
 http://127.0.0.1:5173/nueva-contrasena
 ```
+
+**Previews de Vercel** (opcional): cada PR tiene su propio `*.vercel.app`. Para probar
+recuperación en preview, añade también `https://<preview-url>/nueva-contrasena`. Lo
+habitual es probar solo en local y en producción.
+
+**Dominio personalizado:** si cambias el dominio en Vercel, actualiza Site URL y
+Redirect URLs con el dominio nuevo.
+
+#### Plantillas de email (opcional)
+
+En **Authentication → Email Templates → Reset password** el enlace usa
+`{{ .ConfirmationURL }}`. No hace falta editar la plantilla si Site URL y Redirect
+URLs están bien: Supabase incluye el `redirect_to` que manda la app. Solo revisa la
+plantilla si quieres personalizar el texto del correo (asunto, cuerpo en español).
+
+#### Cómo probar recuperación en producción
+
+1. Abre `https://coach-merche-app.vercel.app/recuperar-acceso`.
+2. Introduce el email de una cuenta **ya registrada** en Supabase.
+3. Revisa la bandeja (y spam). El enlace debe abrir
+   `https://coach-merche-app.vercel.app/nueva-contrasena#...` (hash con tokens).
+4. Debe mostrarse *«Crea tu contraseña nueva»*. Tras guardar, redirige al inicio con
+   sesión iniciada.
+5. Si ves *«Este enlace ya no sirve»* o caes en la portada sin formulario:
+   - Comprueba que **Redirect URLs** incluye exactamente
+     `https://coach-merche-app.vercel.app/nueva-contrasena`.
+   - Comprueba que **Site URL** es `https://coach-merche-app.vercel.app` (sin `/` final).
+   - El enlace caduca (~1 h); pide uno nuevo desde `/recuperar-acceso`.
 
 ### 4. Deploy con CLI (opcional)
 

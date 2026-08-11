@@ -167,6 +167,7 @@ site_url = "http://localhost:5173"
 # la recuperacion de contrasena no funciona. No borrar.
 # La URL equivalente de PRODUCCION hay que darla de alta a mano en el panel
 # (Authentication -> URL Configuration): este fichero solo rige el entorno local.
+# Produccion Vercel: https://coach-merche-app.vercel.app/nueva-contrasena
 additional_redirect_urls = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
