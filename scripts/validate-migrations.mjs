@@ -249,6 +249,15 @@ async function runSmokeTests(db) {
   )
   check('Ana reserva su plaza', booked.rows[0].total === 1)
 
+  const bookingNotification = await db.query(
+    `select type, title from public.notifications where user_id = '${ANA}' order by created_at desc limit 1`,
+  )
+  check(
+    'Reservar clase crea notificación de confirmación',
+    bookingNotification.rows[0]?.type === 'booking_confirmed',
+    JSON.stringify(bookingNotification.rows[0]),
+  )
+
   const doubleBooking = await expectFailure(
     `select public.book_class('${CLASS}')`,
     'ALREADY_BOOKED',
@@ -427,7 +436,56 @@ async function runSmokeTests(db) {
   `)
   await signInAs(ANA)
   const visiblePosts = await db.query('select count(*)::int as total from public.posts')
-  check('Una alumna solo ve publicaciones publicadas', visiblePosts.rows[0].total === 1)
+  check(
+    'Una alumna solo ve publicaciones publicadas',
+    visiblePosts.rows[0].total === 1,
+  )
+
+  // ---- Notificaciones y pagos -------------------------------------------
+  const anaPaymentsInsert = await expectFailure(
+    `insert into public.payments (user_id, month, amount_cents) values ('${ANA}', '2026-08', 4500)`,
+    'row-level security',
+  )
+  check('Una alumna no puede crear pagos', anaPaymentsInsert.ok, anaPaymentsInsert.detail)
+
+  await signInAs(MERCHE)
+  await db.query(
+    `insert into public.payments (user_id, month, amount_cents, status) values ('${ANA}', '2026-08', 4500, 'pending')`,
+  )
+  await db.query(
+    `insert into public.notifications (user_id, type, title, body) values ('${LAURA}', 'custom', 'Hola', 'Prueba manual')`,
+  )
+
+  await signInAs(ANA)
+  const ownPayments = await db.query(
+    `select count(*)::int as total from public.payments where user_id = '${ANA}'`,
+  )
+  check('Una alumna ve sus propios pagos', ownPayments.rows[0].total === 1)
+
+  const lauraNotifications = await db.query(
+    `select count(*)::int as total from public.notifications where user_id = '${LAURA}'`,
+  )
+  check('Una alumna no ve avisos de otra', lauraNotifications.rows[0].total === 0)
+
+  await signInAs(MERCHE)
+  const profilesList = await db.query(`select * from public.admin_list_profiles()`)
+  check(
+    'Admin puede listar perfiles con email',
+    profilesList.rows.length === 3,
+    `perfiles=${profilesList.rows.length}`,
+  )
+
+  const participants = await db.query(
+    `select * from public.admin_get_class_participants('${CLASS}')`,
+  )
+  check(
+    'Admin ve participantes de una clase',
+    participants.rows.some((row) => row.user_id === LAURA),
+    JSON.stringify(participants.rows),
+  )
+
+  const reminderStub = await db.query(`select public.notify_class_reminders() as total`)
+  check('notify_class_reminders stub responde 0', reminderStub.rows[0].total === 0)
 
   let failed = 0
   for (const result of results) {

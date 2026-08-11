@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { CalendarIcon, DumbbellIcon, AlertIcon } from '@/components/icons'
 import { TopBar } from '@/components/navigation/TopBar'
 import { Button, Card, EmptyState } from '@/components/ui'
+import { NotificationBell } from '@/features/notifications'
 import {
   ClassBookingStatus,
   ClassCard,
@@ -64,7 +65,7 @@ export function HomePage() {
 
   return (
     <>
-      <TopBar />
+      <TopBar action={<NotificationBell />} />
 
       <section className="flex flex-col gap-5 pt-2">
         <div>

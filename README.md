@@ -85,7 +85,11 @@ en español porque son visibles para las alumnas.
 | `/entrenamientos`   | Entrenamientos                       | Requiere sesión                   |
 | `/recompensas`      | Recompensas                          | Requiere sesión                   |
 | `/perfil`           | Perfil de la alumna                  | Requiere sesión                   |
-| `/gestion`          | Área de administración de Merche     | Requiere sesión **y** rol `admin` |
+| `/gestion`          | Panel admin — resumen                | Requiere sesión **y** rol `admin` |
+| `/gestion/clases`   | Clases con contador de apuntadas     | Admin                             |
+| `/gestion/clases/:id` | Detalle: participantes y asistencia | Admin                             |
+| `/gestion/pagos`    | Control manual de cuotas             | Admin                             |
+| `/gestion/notificaciones` | Enviar avisos + historial      | Admin                             |
 | `/design`           | Validación interna del design system | Requiere sesión                   |
 | `/login`            | Iniciar sesión                       | Pública (solo sin sesión)         |
 | `/registro`         | Crear cuenta                         | Pública (solo sin sesión)         |
@@ -97,8 +101,9 @@ en español porque son visibles para las alumnas.
 - `/nueva-contrasena` es la única pantalla de acceso que **no** se bloquea con
   sesión activa: el enlace del correo de recuperación abre la app ya con una
   sesión temporal, así que la pantalla tiene que ser accesible en ese estado.
-- `/gestion` está protegida además por rol: una alumna que escriba la URL a mano
-  no entra.
+- `/gestion/*` está protegida además por rol (`effectiveIsAdmin`): una alumna que
+  escriba la URL a mano no entra. El panel usa un layout propio sin la navegación
+  inferior de alumna.
 - `/design` es una pantalla interna de trabajo, no forma parte del producto que
   ve la alumna.
 - Cualquier otra dirección dentro de la app muestra la pantalla de "no
@@ -454,6 +459,22 @@ Las operaciones sensibles no se resuelven en el frontend:
 | `confirm_class_attendance(p_class_id, p_attendee_ids)` | Registra la asistencia de toda la clase, la cierra y desbloquea recompensas                                                                                                          |
 | `sync_user_rewards(p_user_id)`                         | Desbloquea recompensas alcanzadas sin duplicar                                                                                                                                       |
 | `mark_reward_delivered(p_user_reward_id)`              | Marca un premio físico como entregado                                                                                                                                                |
+| `admin_list_profiles()`                              | Directorio de alumnas con email (solo admin)                                                                                                                                         |
+| `admin_get_class_participants(p_class_id)`             | Inscritas de una clase con email y asistencia (solo admin)                                                                                                                           |
+| `notify_class_reminders()`                           | **Stub** — recordatorios automáticos 24 h antes (Fase 13 + cron)                                                                                                                     |
+
+### Tablas admin y notificaciones
+
+| Tabla            | Propósito                                                                 |
+| ---------------- | ------------------------------------------------------------------------- |
+| `payments`       | Cuotas mensuales por alumna (`pending` / `paid` / `overdue`)              |
+| `notifications`  | Avisos in-app (`booking_confirmed`, `new_workout`, `class_reminder`, …)   |
+
+- Al reservar (`book_class`) se inserta aviso **Reserva confirmada** para la alumna
+  y un aviso interno para Merche.
+- Al publicar un entrenamiento activo se avisa a todas las alumnas.
+- **No incluido aún (Fase 13):** push PWA / service worker, cron de recordatorios,
+  pasarela Stripe (solo control manual de pagos).
 
 El contador de entrenamientos **solo** se deriva de `attendance.attended = true`.
 
@@ -509,10 +530,10 @@ Colocar los archivos oficiales en `public/assets/brand/` cuando estén disponibl
 | 6 — Reservas y cancelación       | ✅ Completada (`34b1e40`)                                    |
 | 7 — Workouts                     | Pendiente                                                    |
 | 8 — Posts                        | Pendiente                                                    |
-| 9 — Admin móvil                  | Pendiente                                                    |
+| 9 — Admin móvil                  | ✅ Base completada — panel `/gestion/*`, pagos y avisos      |
 | 10 — Asistencia                  | Pendiente                                                    |
 | 11 — Recompensas                 | Pendiente                                                    |
 | 12 — Storage                     | Pendiente                                                    |
-| 13 — PWA                         | Pendiente                                                    |
+| 13 — PWA                         | Pendiente — push notifications + cron recordatorios          |
 | 14 — QA global                   | Pendiente                                                    |
 | 15 — Producción (Vercel)         | Pendiente                                                    |

@@ -1,6 +1,13 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import {
+  AdminClassDetailPage,
+  AdminClassesPage,
+  AdminDashboardPage,
+  AdminLayout,
+  AdminNotificationsPage,
+  AdminPaymentsPage,
+} from '@/features/admin'
 import { AppShell } from '@/layouts/AppShell'
-import { AdminPage } from '@/pages/AdminPage'
 import { ClassesPage } from '@/pages/ClassesPage'
 import { ClassDetailPage } from '@/pages/ClassDetailPage'
 import { DesignSystemPage } from '@/pages/DesignSystemPage'
@@ -40,10 +47,17 @@ export function AppRouter() {
             <Route path="recompensas" element={<RewardsPage />} />
             <Route path="perfil" element={<ProfilePage />} />
             <Route path="design" element={<DesignSystemPage />} />
-            <Route element={<AdminRoute />}>
-              <Route path="gestion" element={<AdminPage />} />
-            </Route>
             <Route path="*" element={<NotFoundPage />} />
+          </Route>
+
+          <Route element={<AdminRoute />}>
+            <Route element={<AdminLayout />}>
+              <Route path="gestion" element={<AdminDashboardPage />} />
+              <Route path="gestion/clases" element={<AdminClassesPage />} />
+              <Route path="gestion/clases/:id" element={<AdminClassDetailPage />} />
+              <Route path="gestion/pagos" element={<AdminPaymentsPage />} />
+              <Route path="gestion/notificaciones" element={<AdminNotificationsPage />} />
+            </Route>
           </Route>
         </Route>
       </Routes>

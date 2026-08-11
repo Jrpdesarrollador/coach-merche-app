@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TopBar } from '@/components/navigation/TopBar'
+import { NotificationBell } from '@/features/notifications'
 import {
   Avatar,
   Badge,
@@ -80,7 +81,7 @@ export function ProfilePage() {
 
   return (
     <>
-      <TopBar title="Perfil" />
+      <TopBar title="Perfil" action={<NotificationBell />} />
 
       <section className="flex flex-col gap-4 pt-2">
         <Card className="flex flex-col items-center gap-3 text-center">

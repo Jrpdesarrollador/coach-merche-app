@@ -15,6 +15,13 @@ export type BookingStatus = 'active' | 'cancelled'
 export type WorkoutDifficulty = 'facil' | 'media' | 'alta'
 export type RewardType = 'digital' | 'physical' | 'experience'
 export type UserRewardStatus = 'unlocked' | 'pending_delivery' | 'delivered'
+export type PaymentStatus = 'pending' | 'paid' | 'overdue'
+export type NotificationType =
+  | 'class_reminder'
+  | 'new_workout'
+  | 'new_class'
+  | 'custom'
+  | 'booking_confirmed'
 
 export interface UnlockedReward {
   user_id: string
@@ -216,6 +223,56 @@ export interface Database {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          id: string
+          user_id: string
+          month: string
+          amount_cents: number
+          status: PaymentStatus
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          month: string
+          amount_cents: number
+          status?: PaymentStatus
+          notes?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          status?: PaymentStatus
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string | null
+          type: NotificationType
+          title: string
+          body: string
+          read_at: string | null
+          metadata: Record<string, unknown>
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          type: NotificationType
+          title: string
+          body: string
+          metadata?: Record<string, unknown>
+        }
+        Update: {
+          read_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       class_availability: {
@@ -257,6 +314,36 @@ export interface Database {
         Args: { p_user_reward_id: string }
         Returns: Database['public']['Tables']['user_rewards']['Row']
       }
+      notify_class_reminders: {
+        Args: Record<string, never>
+        Returns: number
+      }
+      admin_list_profiles: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          name: string
+          last_name: string | null
+          email: string
+          phone: string | null
+          avatar_url: string | null
+          role: string
+        }[]
+      }
+      admin_get_class_participants: {
+        Args: { p_class_id: string }
+        Returns: {
+          booking_id: string
+          user_id: string
+          name: string
+          last_name: string | null
+          email: string
+          booking_status: string
+          booked_at: string
+          attended: boolean
+          attendance_confirmed_at: string | null
+        }[]
+      }
     }
     // El esquema no declara tipos enum ni compuestos: los valores cerrados
     // (`role`, `status`, `difficulty`...) se validan con CHECK constraints y se
@@ -278,3 +365,8 @@ export type Post = Tables<'posts'>
 export type Reward = Tables<'rewards'>
 export type UserReward = Tables<'user_rewards'>
 export type ClassAvailability = Database['public']['Views']['class_availability']['Row']
+export type Payment = Tables<'payments'>
+export type Notification = Tables<'notifications'>
+export type AdminProfile = Database['public']['Functions']['admin_list_profiles']['Returns'][number]
+export type ClassParticipant =
+  Database['public']['Functions']['admin_get_class_participants']['Returns'][number]

@@ -125,3 +125,43 @@ export function PinIcon(props: IconProps) {
     </svg>
   )
 }
+
+export function BellIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 4.5a4.5 4.5 0 0 0-4.5 4.5v2.8L5.5 15.5h13L16.5 11.8V9a4.5 4.5 0 0 0-4.5-4.5z" />
+      <path d="M10 18a2 2 0 0 0 4 0" />
+    </svg>
+  )
+}
+
+export function LayoutGridIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="4" y="4" width="6.5" height="6.5" rx="1.5" />
+      <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" />
+      <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" />
+      <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" />
+    </svg>
+  )
+}
+
+export function CreditCardIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="6.5" width="18" height="11" rx="2" />
+      <path d="M3 10.5h18M7 15h3" />
+    </svg>
+  )
+}
+
+export function UsersIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="9" cy="8.5" r="3" />
+      <path d="M3 20.5a6 6 0 0 1 12 0" />
+      <circle cx="17.5" cy="9.5" r="2.5" />
+      <path d="M15 20.5a4.5 4.5 0 0 1 7 0" />
+    </svg>
+  )
+}
