@@ -27,7 +27,8 @@ Completa en `.env.local`:
 | Script                 | Descripción                                                             |
 | ---------------------- | ----------------------------------------------------------------------- |
 | `npm run dev`          | Servidor de desarrollo                                                  |
-| `npm run build`        | Build de producción + typecheck                                         |
+| `npm run build`        | Build de producción + typecheck (falla en Vercel/CI si faltan env vars Supabase) |
+| `npm run verify:production` | Comprueba si el bundle publicado tiene Supabase real (no placeholder)       |
 | `npm run preview`      | Vista previa del build                                                  |
 | `npm run lint`         | Oxlint                                                                  |
 | `npm run format`       | Prettier (escritura)                                                    |
@@ -517,7 +518,8 @@ Router y cabeceras para PWA (service worker, manifest e iconos).
 2. Importa el repositorio **`Jrpdesarrollador/coach-merche-app`**.
 3. Vercel detecta **Vite** automáticamente. No cambies el directorio raíz salvo que
    el proyecto viva en un subfolder (no es el caso).
-4. **Build Command:** `npm run build` (ya definido en `vercel.json`).
+4. **Build Command:** `npm run build` (ya definido en `vercel.json`). En Vercel el build
+   **falla** si faltan `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` — revisa los Build Logs.
 5. **Output Directory:** `dist` (ya definido en `vercel.json`).
 6. Pulsa **Deploy**. Los pushes a `main` despliegan producción; cada PR genera una
    URL de preview (`*.vercel.app`).
@@ -542,9 +544,20 @@ Tras cambiar variables, **redeploy obligatorio**: Vite embebe `VITE_*` en el bun
 **tiempo de build**. Añadir o editar variables en el dashboard **no** afecta al deployment
 ya publicado hasta que vuelvas a desplegar.
 
-1. **Deployments** → el deployment activo → **…** → **Redeploy** (marca *Use existing
-   Build Cache* si quieres; lo importante es un build nuevo).
-2. O haz un push vacío a `main` para disparar un deployment automático.
+1. **Deployments** → el deployment activo → **…** → **Redeploy** — **desmarca** *Use existing
+   Build Cache* para forzar un build limpio con las variables actuales.
+2. O haz un push a `main` para disparar un deployment automático.
+
+Comprobación desde tu máquina (tras el redeploy):
+
+```bash
+npm run verify:production
+# o contra otra URL:
+npm run verify:production -- https://tu-preview.vercel.app
+```
+
+Debe mostrar `✅ Supabase configurado` con la URL `https://<PROJECT_REF>.supabase.co`.
+Si muestra `placeholder.supabase.co`, el build siguió sin variables.
 
 ### Solución de problemas — «Todavía no hemos conectado la app con el servidor»
 

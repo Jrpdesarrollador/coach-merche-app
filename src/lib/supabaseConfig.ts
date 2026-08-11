@@ -89,9 +89,13 @@ export function findSupabaseConfigProblems(
 export function formatSupabaseConfigWarning(problems: SupabaseConfigProblem[]): string {
   const lines = problems.map((problem) => `- ${problem.variable}: ${problem.message}`)
 
+  const hint = import.meta.env.PROD
+    ? 'En Vercel: Settings → Environment Variables → Redeploy (Clear build cache). npm run verify:production'
+    : 'Revisa .env.local y reinicia el servidor de desarrollo.'
+
   return [
     'Configuración de Supabase incompleta o inválida; la app funcionará sin conexión a la base de datos.',
     ...lines,
-    'Revisa .env.local y reinicia el servidor de desarrollo.',
+    hint,
   ].join('\n')
 }
