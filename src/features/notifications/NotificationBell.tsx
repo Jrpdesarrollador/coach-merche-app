@@ -12,6 +12,7 @@ const typeLabels: Record<NotificationType, string> = {
   class_reminder: 'Recordatorio',
   new_workout: 'Entrenamiento',
   new_class: 'Clase',
+  new_post: 'Novedad',
   custom: 'Aviso',
 }
 

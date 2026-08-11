@@ -30,6 +30,9 @@ export type NotificationType =
   | 'new_class'
   | 'custom'
   | 'booking_confirmed'
+  | 'new_post'
+
+export type PostMediaType = 'none' | 'image' | 'video'
 
 export interface UnlockedReward {
   user_id: string
@@ -248,7 +251,11 @@ export interface Database {
           title: string
           content: string | null
           image_url: string | null
+          image_path: string | null
+          video_path: string | null
+          media_type: PostMediaType
           published: boolean
+          published_at: string | null
           created_at: string
           updated_at: string
         }
@@ -257,7 +264,11 @@ export interface Database {
           title: string
           content?: string | null
           image_url?: string | null
+          image_path?: string | null
+          video_path?: string | null
+          media_type?: PostMediaType
           published?: boolean
+          published_at?: string | null
         }
         Update: Partial<Database['public']['Tables']['posts']['Insert']>
         Relationships: []

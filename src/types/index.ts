@@ -29,6 +29,7 @@ export type {
   Payment,
   PaymentStatus,
   Post,
+  PostMediaType,
   Profile,
   Reward,
   RewardType,
