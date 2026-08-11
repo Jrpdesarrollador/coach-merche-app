@@ -1,67 +1,25 @@
 -- ============================================================
--- Coach Merche App — Clases de demo (OPCIONAL)
+-- Coach Merche App — Clases de demo (LEGACY / OPCIONAL)
 --
--- Script independiente del seed principal. NO se ejecuta en
--- db:push:seed. Úsalo manualmente en el SQL Editor de Supabase
--- para probar el calendario con 2-3 clases futuras.
+-- ⚠️  Las clases recurrentes ya se generan automáticamente con la
+--     migración 20260809121100_recurring_classes.sql mediante la
+--     función public.ensure_recurring_classes().
 --
--- Requisitos previos:
---   - Al menos un workout activo en public.workouts
---   - Un perfil admin (created_by) opcional
+-- Horario fijo (Europe/Madrid):
+--   · Martes  19:00 → Full Body
+--   · Jueves  19:00 → EMOM Táctico
 --
--- Ajusta las fechas relativas a «hoy» y los workout_id si hace falta.
+-- Para extender o regenerar la ventana futura (p. ej. 12 semanas):
+--
+--   select public.ensure_recurring_classes(12);
+--
+-- Ejecutar en el SQL Editor de Supabase (rol service_role o postgres).
+-- La función es idempotente: no crea duplicados.
+--
+-- Este script antiguo insertaba clases de ejemplo con fechas y horas
+-- arbitrarias. Conservado solo como referencia histórica; NO usar en
+-- producción salvo pruebas puntuales en entornos vacíos.
 -- ============================================================
 
--- Ejemplo: insertar workouts de demo si no existen
-insert into public.workouts (title, description, poster_url, difficulty, duration_minutes, category, active)
-values
-  (
-    'Full Body',
-    'Sesión completa de fuerza y acondicionamiento.',
-    '/assets/workouts/full-body.png',
-    'media',
-    45,
-    'Fuerza',
-    true
-  ),
-  (
-    'EMOM Táctico',
-    'Entrenamiento por intervalos con enfoque metabólico.',
-    '/assets/workouts/emom-tactico.png',
-    'alta',
-    30,
-    'Metcon',
-    true
-  )
-on conflict do nothing;
-
--- Clases programadas para la semana que viene (fechas relativas)
-with demo_workouts as (
-  select id, title, row_number() over (order by created_at) as rn
-  from public.workouts
-  where active = true
-  limit 2
-)
-insert into public.classes (workout_id, date, start_time, location, capacity, status)
-select
-  w.id,
-  (current_date + (1 + (w.rn % 5))::int)::date,
-  case w.rn when 1 then '10:00'::time else '20:00'::time end,
-  'Box Coach Merche',
-  case w.rn when 1 then 12 else 8 end,
-  'scheduled'
-from demo_workouts w;
-
--- Tercera clase: fin de semana
-insert into public.classes (workout_id, date, start_time, location, capacity, status)
-select
-  id,
-  (current_date + 6)::date,
-  '11:30'::time,
-  'Box Coach Merche',
-  10,
-  'scheduled'
-from public.workouts
-where active = true
-order by created_at
-limit 1;
+-- Referencia del comportamiento automático (no ejecutar en prod):
+-- select public.ensure_recurring_classes(12);

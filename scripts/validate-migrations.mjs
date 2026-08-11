@@ -192,6 +192,46 @@ async function runSmokeTests(db) {
   )
   check('Una alumna no puede ascenderse a admin', selfPromotion.ok, selfPromotion.detail)
 
+  // ---- Clases recurrentes martes/jueves 19:00 ---------------------------
+  await signInAs()
+  const recurringCount = await db.query(`
+    select count(*)::int as total
+    from public.classes c
+    join public.workouts w on w.id = c.workout_id
+    where c.start_time = '19:00'
+      and c.status = 'scheduled'
+      and lower(trim(w.title)) in ('full body', 'emom táctico', 'emom tactico')
+      and c.date >= current_date
+  `)
+  check(
+    'La migración genera clases recurrentes futuras',
+    recurringCount.rows[0].total > 0,
+    `clases=${recurringCount.rows[0].total}`,
+  )
+
+  const wrongWeekday = await db.query(`
+    select count(*)::int as total
+    from public.classes c
+    join public.workouts w on w.id = c.workout_id
+    where c.start_time = '19:00'
+      and lower(trim(w.title)) in ('full body', 'emom táctico', 'emom tactico')
+      and extract(dow from c.date) not in (2, 4)
+  `)
+  check(
+    'Las clases recurrentes solo caen martes o jueves',
+    wrongWeekday.rows[0].total === 0,
+    `fuera_de_dia=${wrongWeekday.rows[0].total}`,
+  )
+
+  const beforeRecurring = await db.query('select count(*)::int as total from public.classes')
+  await db.query('select public.ensure_recurring_classes(12)')
+  const afterRecurring = await db.query('select count(*)::int as total from public.classes')
+  check(
+    'ensure_recurring_classes es idempotente',
+    beforeRecurring.rows[0].total === afterRecurring.rows[0].total,
+    `antes=${beforeRecurring.rows[0].total}, después=${afterRecurring.rows[0].total}`,
+  )
+
   // ---- Clase con una sola plaza -----------------------------------------
   await signInAs()
   await db.exec(`
