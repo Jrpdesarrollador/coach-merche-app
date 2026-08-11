@@ -327,6 +327,58 @@ experiencia de una alumna.
 > nunca puede ascenderse a sí misma: el trigger lanza el error
 > `ROLE_CHANGE_NOT_ALLOWED`.
 
+#### Solución de problemas — «Solo veo perfil de alumna»
+
+**Síntomas:** la cuenta entra bien, se ve el nombre y el correo en **Perfil**, aparece
+«Tu actividad», pero **no** hay tarjeta «Vista de la app», badge «Entrenadora» ni
+acceso a **Gestión**.
+
+**Causa habitual:** el perfil existe con `role = 'user'`. Toda cuenta nueva se crea
+así por defecto (trigger `handle_new_user`); el `UPDATE` de admin del Paso 8 o de
+`supabase/scripts/set-admins.sql` **aún no se ha ejecutado** en el proyecto de
+Supabase en la nube.
+
+**Diagnóstico** (SQL Editor del dashboard):
+
+```sql
+select p.id, p.name, p.role, u.email
+from public.profiles p
+join auth.users u on u.id = p.id
+where u.email = 'merche.valverde@outlook.com';
+```
+
+Si `role` es `user`, ese es el problema. No es un bug de la app: el toggle, el badge
+y el panel de gestión solo aparecen cuando `profiles.role = 'admin'` **y** (para el
+toggle) el email está en la allowlist de `src/features/auth/viewMode.ts` — Merche ya
+está en esa lista.
+
+**Solución:**
+
+```sql
+update public.profiles
+set role = 'admin', name = 'Merche'
+where id = (
+  select id from auth.users where email = 'merche.valverde@outlook.com'
+);
+```
+
+O ejecuta el script completo `supabase/scripts/set-admins.sql`.
+
+**Después:** Merche debe **cerrar sesión y volver a entrar** para recargar el perfil.
+En **Perfil** debería verse la tarjeta «Vista de la app», el badge «Entrenadora» y
+el botón «Ir al panel de gestión».
+
+**Si el `SELECT` no devuelve filas:** la cuenta existe en Auth pero no tiene perfil
+(raro: el trigger debería haberlo creado al registrarse). Comprueba en
+**Authentication → Users** que el email coincide exactamente. Si hace falta, crea
+el perfil a mano desde el SQL Editor (solo en ese caso excepcional).
+
+**Si `role` ya es `admin` y sigue sin verse:** comprueba que el email de sesión
+coincide con el de la allowlist (no importan mayúsculas/minúsculas). Borra la
+preferencia local `coach-merche-view-mode` en las herramientas de desarrollo del
+navegador y recarga; si estaba en `user`, la UI oculta gestión hasta volver a
+«Ver como admin».
+
 #### Cómo se crea el perfil al registrarse
 
 El frontend **no inserta perfiles**, y de hecho no podría: la tabla `profiles` no
@@ -450,6 +502,17 @@ Colocar los archivos oficiales en `public/assets/brand/` cuando estén disponibl
 | -------------------------------- | ------------------------------------------------------------ |
 | 0 — Setup y arquitectura         | Completada                                                   |
 | 1 — Design System                | Completada                                                   |
-| 2 — Supabase (esquema, RLS, RPC) | Migraciones listas, pendiente de aplicar en el proyecto real |
+| 2 — Supabase (esquema, RLS, RPC) | ✅ Completada — migraciones aplicadas en remoto (`78e5d44`) |
 | 3 — Auth                         | Completada                                                   |
-| 4–15                             | Pendientes                                                   |
+| 4 — Home usuaria                 | ✅ Completada (`0aa2cc6`)                                    |
+| 5 — Clases y calendario          | ✅ Completada (`ae1fcbd`)                                    |
+| 6 — Reservas y cancelación       | ✅ Completada (`34b1e40`)                                    |
+| 7 — Workouts                     | Pendiente                                                    |
+| 8 — Posts                        | Pendiente                                                    |
+| 9 — Admin móvil                  | Pendiente                                                    |
+| 10 — Asistencia                  | Pendiente                                                    |
+| 11 — Recompensas                 | Pendiente                                                    |
+| 12 — Storage                     | Pendiente                                                    |
+| 13 — PWA                         | Pendiente                                                    |
+| 14 — QA global                   | Pendiente                                                    |
+| 15 — Producción (Vercel)         | Pendiente                                                    |
