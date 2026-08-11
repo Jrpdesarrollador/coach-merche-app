@@ -43,7 +43,7 @@ const messagesByCode: Record<string, string> = {
   user_not_found: 'No encontramos ninguna cuenta con ese email.',
   otp_expired: 'El enlace ha caducado. Pide uno nuevo para continuar.',
   over_email_send_rate_limit:
-    'Hemos enviado demasiados correos seguidos. Espera unos minutos y vuelve a probar.',
+    'Hemos enviado demasiados correos seguidos. Espera unos minutos y vuelve a probar. ¿Ya tienes cuenta? Inicia sesión.',
   over_request_rate_limit:
     'Has hecho demasiados intentos seguidos. Espera un momento y vuelve a probar.',
   signup_disabled: 'El registro está cerrado ahora mismo.',
@@ -70,7 +70,10 @@ const messagesByFragment: [string, string][] = [
   ['password should be at least', 'La contraseña es demasiado corta.'],
   ['unable to validate email', 'Ese email no parece válido.'],
   ['for security purposes', 'Espera unos segundos antes de volver a intentarlo.'],
-  ['email rate limit', 'Hemos enviado demasiados correos seguidos. Espera unos minutos.'],
+  [
+    'email rate limit',
+    'Hemos enviado demasiados correos seguidos. Espera unos minutos. ¿Ya tienes cuenta? Inicia sesión.',
+  ],
   ['failed to fetch', NETWORK_MESSAGE],
   ['network', NETWORK_MESSAGE],
   ['row-level security', 'No tienes permiso para hacer esto.'],
