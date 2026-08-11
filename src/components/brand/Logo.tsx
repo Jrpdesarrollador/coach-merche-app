@@ -12,9 +12,9 @@ interface LogoProps {
 }
 
 const sizeClasses: Record<LogoSize, string> = {
-  sm: 'size-9',
-  md: 'size-14',
-  lg: 'size-24',
+  sm: 'size-11',
+  md: 'size-16',
+  lg: 'size-28',
 }
 
 export const LOGO_SRC = '/assets/brand/logo-coach-merche.png'

@@ -7,7 +7,7 @@ export function PendingApprovalPage() {
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center px-6 py-12">
-      <Logo size="lg" decorative className="mb-6" />
+      <Logo size="lg" decorative className="mb-5" />
       <Card className="w-full max-w-md text-center">
         <CardLabel>Validación pendiente</CardLabel>
         <h1 className="mt-2 font-display text-2xl text-ink">

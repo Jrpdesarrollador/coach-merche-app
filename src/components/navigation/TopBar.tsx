@@ -14,7 +14,7 @@ export function TopBar({ title, showBack = false, action }: TopBarProps) {
   const navigate = useNavigate()
 
   return (
-    <header className="flex h-14 items-center justify-between gap-2">
+    <header className="flex items-center justify-between gap-2 py-1">
       <div className="flex min-w-0 items-center gap-1">
         {showBack && (
           <IconButton
@@ -28,7 +28,7 @@ export function TopBar({ title, showBack = false, action }: TopBarProps) {
           <h1 className="truncate font-display text-xl text-ink">{title}</h1>
         ) : (
           <div className="flex min-w-0 items-center gap-2">
-            <Logo size="sm" decorative />
+            <Logo size="md" decorative priority />
             <span className="font-display text-sm tracking-[0.22em] text-gold uppercase">
               Coach Merche
             </span>

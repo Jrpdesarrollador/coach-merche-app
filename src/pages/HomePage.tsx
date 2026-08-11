@@ -67,7 +67,7 @@ export function HomePage() {
     <>
       <TopBar action={<NotificationBell />} />
 
-      <section className="flex flex-col gap-5 pt-2">
+      <section className="flex flex-col gap-5 pt-0.5">
         <div>
           <h1 className="font-display text-3xl text-ink">{greeting}</h1>
           <p className="mt-1 text-sm text-ink-muted">Entrena tu mejor versión</p>

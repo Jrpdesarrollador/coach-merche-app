@@ -3,7 +3,7 @@ import { Logo } from '@/components/brand'
 /** Cabecera premium del panel admin, inspirada en preview.html. */
 export function AdminHero() {
   return (
-    <section className="relative overflow-hidden rounded-[26px] border border-line-gold bg-linear-to-br from-green-deep/95 via-bg-primary/90 to-bg-primary px-6 py-7 shadow-premium sm:px-7 sm:py-8">
+    <section className="relative overflow-hidden rounded-[26px] border border-line-gold bg-linear-to-br from-green-deep/95 via-bg-primary/90 to-bg-primary px-6 py-5 shadow-premium sm:px-7 sm:py-6">
       <div
         aria-hidden
         className="pointer-events-none absolute -top-12 right-5 font-display text-[250px] leading-none font-black text-lime/[0.035] select-none"
@@ -14,7 +14,7 @@ export function AdminHero() {
       <Logo
         size="lg"
         decorative
-        className="relative z-[2] mb-4 sm:absolute sm:top-1/2 sm:right-7 sm:mb-0 sm:-translate-y-1/2 sm:opacity-95"
+        className="relative z-[2] mb-3 sm:absolute sm:top-1/2 sm:right-6 sm:mb-0 sm:-translate-y-1/2 sm:opacity-95"
       />
 
       <div className="relative z-[3] max-w-2xl sm:pr-44">

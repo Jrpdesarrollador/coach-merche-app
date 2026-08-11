@@ -14,9 +14,9 @@ interface AuthLayoutProps {
 /** Marco común de las pantallas de acceso: marca, tarjeta y pie de enlaces. */
 export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
   return (
-    <main className="flex min-h-svh justify-center px-4 pt-[calc(var(--safe-top)+3rem)] pb-[calc(var(--safe-bottom)+2.5rem)]">
-      <div className="flex w-full max-w-[var(--app-max-width)] flex-col gap-7">
-        <header className="flex flex-col items-center gap-3 text-center">
+    <main className="flex min-h-svh justify-center px-4 pt-[calc(var(--safe-top)+2.5rem)] pb-[calc(var(--safe-bottom)+2.5rem)]">
+      <div className="flex w-full max-w-[var(--app-max-width)] flex-col gap-6">
+        <header className="flex flex-col items-center gap-2 text-center">
           <Logo size="md" decorative priority />
           <div className="flex flex-col gap-1">
             <p className="font-display text-sm tracking-[0.26em] text-ink uppercase">

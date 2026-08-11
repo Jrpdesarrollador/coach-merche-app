@@ -15,7 +15,7 @@ export function AdminLayout() {
   return (
     <div className="min-h-svh bg-bg-primary">
       <div className="mx-auto flex min-h-svh w-full max-w-5xl flex-col px-4 pt-[var(--safe-top)] pb-[calc(5.5rem+var(--safe-bottom))] sm:px-6 sm:pb-8">
-        <header className="mb-4 flex items-center justify-between gap-3 border-b border-line-gold/40 pb-3 print:hidden">
+        <header className="mb-3 flex items-center justify-between gap-3 border-b border-line-gold/40 pb-2 print:hidden">
           <div className="flex min-w-0 items-center gap-2">
             <IconButton
               label="Volver a la app"
