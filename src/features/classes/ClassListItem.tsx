@@ -42,7 +42,8 @@ interface ClassListItemProps {
   location: string
   bookedCount: number
   capacity: number
-  badgeState: ClassListBadgeState
+  badgeState?: ClassListBadgeState
+  showBookingCount?: boolean
   onSelect: (classId: string) => void
 }
 
@@ -54,6 +55,7 @@ export function ClassListItem({
   bookedCount,
   capacity,
   badgeState,
+  showBookingCount = false,
   onSelect,
 }: ClassListItemProps) {
   const availableCount = Math.max(capacity - bookedCount, 0)
@@ -72,14 +74,20 @@ export function ClassListItem({
           <h3 className="truncate font-display text-lg text-ink">{title}</h3>
           <p className="truncate text-sm text-ink-muted">{location}</p>
         </div>
-        <ClassListBadge state={badgeState} />
+        {showBookingCount ? (
+          <Badge tone={bookedCount > 0 ? 'lime' : 'neutral'}>{bookedCount} apuntadas</Badge>
+        ) : (
+          badgeState && <ClassListBadge state={badgeState} />
+        )}
       </div>
       <p className="text-xs text-ink-soft">
-        {badgeState === 'full'
-          ? 'Sin plazas libres'
-          : badgeState === 'past'
-            ? 'Clase pasada'
-            : `${availableCount} / ${capacity} plazas`}
+        {showBookingCount
+          ? `${bookedCount} / ${capacity} plazas`
+          : badgeState === 'full'
+            ? 'Sin plazas libres'
+            : badgeState === 'past'
+              ? 'Clase pasada'
+              : `${availableCount} / ${capacity} plazas`}
       </p>
     </button>
   )

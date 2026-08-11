@@ -25,8 +25,13 @@ function groupByDay(classes: ClassWithWorkout[]): Map<string, ClassWithWorkout[]
   return map
 }
 
-export function WeekView() {
+interface WeekViewProps {
+  variant?: 'user' | 'admin'
+}
+
+export function WeekView({ variant = 'user' }: WeekViewProps) {
   const navigate = useNavigate()
+  const isAdmin = variant === 'admin'
   const { user } = useAuth()
   const { weekStart, weekEnd, days, isCurrentWeek, goToPreviousWeek, goToNextWeek } =
     useWeekCalendar()
@@ -36,7 +41,7 @@ export function WeekView() {
   const classIds = useMemo(() => classes.map((item) => item.class.id), [classes])
 
   useEffect(() => {
-    if (!user?.id || !classIds.length) {
+    if (isAdmin || !user?.id || !classIds.length) {
       setBookedClassIds(new Set())
       return
     }
@@ -60,11 +65,14 @@ export function WeekView() {
     return () => {
       cancelled = true
     }
-  }, [user?.id, classIds])
+  }, [isAdmin, user?.id, classIds])
 
   const classesByDay = useMemo(() => groupByDay(classes), [classes])
   const hasClasses = classes.length > 0
   const today = todayISO()
+
+  const classDetailPath = (id: string) =>
+    isAdmin ? `/gestion/clases/${id}` : `/clases/${id}`
 
   return (
     <div className="flex flex-col gap-4">
@@ -106,8 +114,12 @@ export function WeekView() {
         </div>
       ) : !hasClasses ? (
         <EmptyState
-          title="No hay clases esta semana"
-          description="Merche está preparando lo próximo 💚"
+          title={isAdmin ? 'No hay clases esta semana' : 'No hay clases esta semana'}
+          description={
+            isAdmin
+              ? 'Las clases recurrentes aparecerán aquí automáticamente.'
+              : 'Merche está preparando lo próximo 💚'
+          }
           icon={<CalendarIcon width={28} height={28} />}
         />
       ) : (
@@ -156,14 +168,19 @@ export function WeekView() {
                           location={item.class.location}
                           bookedCount={bookedCount}
                           capacity={capacity}
-                          badgeState={resolveClassListState(
-                            item.class.date,
-                            item.class.start_time,
-                            bookedCount,
-                            capacity,
-                            isBooked,
-                          )}
-                          onSelect={(id) => navigate(`/clases/${id}`)}
+                          showBookingCount={isAdmin}
+                          badgeState={
+                            isAdmin
+                              ? undefined
+                              : resolveClassListState(
+                                  item.class.date,
+                                  item.class.start_time,
+                                  bookedCount,
+                                  capacity,
+                                  isBooked,
+                                )
+                          }
+                          onSelect={(id) => navigate(classDetailPath(id))}
                         />
                       )
                     })}

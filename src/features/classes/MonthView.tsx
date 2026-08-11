@@ -14,8 +14,13 @@ import {
 } from '@/utils/datetime'
 import { cn } from '@/utils/cn'
 
-export function MonthView() {
+interface MonthViewProps {
+  variant?: 'user' | 'admin'
+}
+
+export function MonthView({ variant = 'user' }: MonthViewProps) {
   const navigate = useNavigate()
+  const isAdmin = variant === 'admin'
   const { year, month, isCurrentMonth, goToPreviousMonth, goToNextMonth } =
     useMonthCalendar()
   const { loading, error, classes } = useClassesMonth(year, month)
@@ -39,6 +44,9 @@ export function MonthView() {
 
   const today = todayISO()
   const monthPrefix = `${year}-${String(month).padStart(2, '0')}`
+
+  const classDetailPath = (id: string) =>
+    isAdmin ? `/gestion/clases/${id}` : `/clases/${id}`
 
   return (
     <div className="flex flex-col gap-4">
@@ -94,7 +102,7 @@ export function MonthView() {
                   disabled={!hasClass}
                   onClick={() => {
                     const firstClass = classes.find((item) => item.class.date === day)
-                    if (firstClass) navigate(`/clases/${firstClass.class.id}`)
+                    if (firstClass) navigate(classDetailPath(firstClass.class.id))
                   }}
                   className={cn(
                     'relative flex aspect-square flex-col items-center justify-center rounded-lg border text-sm transition-colors',
@@ -118,7 +126,11 @@ export function MonthView() {
           {classes.length === 0 && (
             <EmptyState
               title="No hay clases este mes"
-              description="Merche está preparando lo próximo 💚"
+              description={
+                isAdmin
+                  ? 'Las clases recurrentes aparecerán aquí automáticamente.'
+                  : 'Merche está preparando lo próximo 💚'
+              }
               icon={<CalendarIcon width={28} height={28} />}
             />
           )}
