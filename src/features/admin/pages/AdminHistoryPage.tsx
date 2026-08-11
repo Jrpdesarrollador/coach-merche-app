@@ -16,7 +16,6 @@ import { AdminSection } from '@/features/admin/components/AdminSection'
 import { useToast } from '@/hooks/useToast'
 import {
   adminService,
-  CLASS_PRICE_CENTS,
   historyAdminService,
   manualAdminService,
   toFriendlyMessage,
@@ -24,6 +23,7 @@ import {
   type HistoryEntryKind,
 } from '@/services'
 import type { AdminProfile, ManualAttendanceRecord, ManualPaymentRecord } from '@/types'
+import { formatCurrencySigned, eurosToCents, formatEurosInput } from '@/utils/currency'
 import { formatShortDate } from '@/utils/datetime'
 import { cn } from '@/utils/cn'
 
@@ -48,14 +48,6 @@ const filterOptions = [
   { value: 'manual_attendance', label: 'Asistencias' },
   { value: 'booking', label: 'Reservas app' },
 ] as const
-
-function formatEuros(cents: number): string {
-  const prefix = cents >= 0 ? '+' : ''
-  return (
-    prefix +
-    new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(cents / 100)
-  )
-}
 
 function displayName(profile: AdminProfile): string {
   return [profile.name, profile.last_name].filter(Boolean).join(' ')
@@ -101,7 +93,7 @@ function TimelineRow({
               entry.amountCents >= 0 ? 'text-lime' : 'text-gold',
             )}
           >
-            {formatEuros(entry.amountCents)}
+            {formatCurrencySigned(entry.amountCents)}
           </span>
         )}
 
@@ -203,7 +195,7 @@ export function AdminHistoryPage() {
 
   function openEditPayment(payment: ManualPaymentRecord) {
     setEditPayment(payment)
-    setEditAmount(String(payment.amount_cents))
+    setEditAmount(formatEurosInput(payment.amount_cents))
     setEditDate(payment.paid_at)
     setEditNotes(payment.notes ?? '')
   }
@@ -216,8 +208,8 @@ export function AdminHistoryPage() {
 
   async function handleSavePaymentEdit() {
     if (!editPayment) return
-    const amountCents = Number(editAmount)
-    if (!amountCents || amountCents <= 0) {
+    const euros = Number(editAmount)
+    if (!euros || euros <= 0) {
       showToast('Importe no válido', 'error')
       return
     }
@@ -226,7 +218,7 @@ export function AdminHistoryPage() {
     try {
       await manualAdminService.updatePayment({
         id: editPayment.id,
-        amountCents,
+        amountCents: eurosToCents(euros),
         paidAt: editDate,
         notes: editNotes.trim() || null,
       })
@@ -405,7 +397,7 @@ export function AdminHistoryPage() {
         {stats.paidCents > 0 && (
           <p className="text-center text-xs text-ink-muted print:text-gray-600">
             Pagos manuales en vista:{' '}
-            <span className="font-bold text-lime">{formatEuros(stats.paidCents)}</span>
+            <span className="font-bold text-lime">{formatCurrencySigned(stats.paidCents)}</span>
           </p>
         )}
       </section>
@@ -428,12 +420,14 @@ export function AdminHistoryPage() {
         <div className="flex flex-col gap-3">
           <Input
             id="hist-edit-amount"
-            label="Importe (céntimos)"
+            label="Importe (€)"
             type="number"
-            min={CLASS_PRICE_CENTS}
-            step={CLASS_PRICE_CENTS}
+            min={0.01}
+            step={0.01}
+            placeholder="21.00"
             value={editAmount}
             onChange={(event) => setEditAmount(event.target.value)}
+            hint="Ej.: 21,00 € (7 €/clase)"
           />
           <Input
             id="hist-edit-date"

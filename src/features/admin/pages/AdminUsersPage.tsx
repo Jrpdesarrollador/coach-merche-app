@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/useToast'
 import { adminUsersService, manualAdminService, toFriendlyMessage } from '@/services'
 import type { AdminUserWithStats, ManualBalanceSummary, MembershipTier, SubscriptionPlan } from '@/types'
 import { formatShortDate } from '@/utils/datetime'
+import { formatCurrency } from '@/utils/currency'
 
 function displayName(user: AdminUserWithStats): string {
   return [user.name, user.last_name].filter(Boolean).join(' ')
@@ -39,10 +40,6 @@ const planOptions = [
   { value: 'monthly', label: 'Mensual — 8,99 €/mes' },
   { value: 'yearly', label: 'Anual — 80 €/año' },
 ] as const
-
-function formatEuros(cents: number): string {
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(cents / 100)
-}
 
 function balanceLabel(summary: ManualBalanceSummary | undefined): string {
   if (!summary) return '—'
@@ -425,7 +422,7 @@ export function AdminUsersPage() {
                           </div>
                           <div className="rounded-xl border border-line/70 p-2.5 text-center">
                             <p className="font-display text-lg font-black text-lime">
-                              {balance ? formatEuros(Number(balance.paid_cents)) : '—'}
+                              {balance ? formatCurrency(Number(balance.paid_cents)) : '—'}
                             </p>
                             <p className="text-[10px] text-ink-muted">Pagado</p>
                           </div>

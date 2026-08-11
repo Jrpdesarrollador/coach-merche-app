@@ -20,6 +20,11 @@ import {
   toFriendlyMessage,
 } from '@/services'
 import type { ManualBalanceSummary } from '@/types'
+import {
+  eurosToCents,
+  formatCurrency,
+  formatEurosInput,
+} from '@/utils/currency'
 
 function todayIso(): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -34,9 +39,13 @@ function displayName(row: ManualBalanceSummary): string {
   return [row.name, row.last_name].filter(Boolean).join(' ')
 }
 
-function formatEuros(cents: number): string {
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(cents / 100)
-}
+const CLASS_PRICE_EUROS = CLASS_PRICE_CENTS / 100
+
+const PAY_PRESETS = [
+  { label: '7 € (1 clase)', euros: 7 },
+  { label: '14 € (2 clases)', euros: 14 },
+  { label: '21 € (3 clases)', euros: 21 },
+] as const
 
 function balanceBadge(row: ManualBalanceSummary) {
   if (row.debt_classes > 0) {
@@ -48,12 +57,6 @@ function balanceBadge(row: ManualBalanceSummary) {
   return <Badge tone="neutral">Al día</Badge>
 }
 
-const PAY_PRESETS = [
-  { label: '7 € (1 clase)', cents: 700 },
-  { label: '14 € (2 clases)', cents: 1400 },
-  { label: '21 € (3 clases)', cents: 2100 },
-] as const
-
 export function AdminRegisterPage() {
   const { showToast } = useToast()
   const [summary, setSummary] = useState<ManualBalanceSummary[]>([])
@@ -63,7 +66,7 @@ export function AdminRegisterPage() {
   const [attDate, setAttDate] = useState(todayIso())
   const [selectedAtt, setSelectedAtt] = useState<string[]>([])
   const [payUserId, setPayUserId] = useState('')
-  const [payAmount, setPayAmount] = useState(String(CLASS_PRICE_CENTS))
+  const [payAmount, setPayAmount] = useState(formatEurosInput(CLASS_PRICE_CENTS))
   const [payDate, setPayDate] = useState(todayIso())
   const [payNote, setPayNote] = useState('')
 
@@ -120,21 +123,22 @@ export function AdminRegisterPage() {
       showToast('Elige una alumna', 'error')
       return
     }
-    const amount = Number(payAmount)
-    if (!amount || amount <= 0) {
+    const euros = Number(payAmount)
+    if (!euros || euros <= 0) {
       showToast('Introduce un importe válido', 'error')
       return
     }
 
     setSavingPay(true)
     try {
+      const amountCents = eurosToCents(euros)
       await manualAdminService.registerPayment({
         userId: payUserId,
-        amountCents: amount,
+        amountCents,
         paidAt: payDate,
         notes: payNote.trim() || undefined,
       })
-      showToast(`Pago de ${formatEuros(amount)} registrado`, 'success')
+      showToast(`Pago de ${formatCurrency(amountCents)} registrado`, 'success')
       setPayNote('')
       await reload()
     } catch (error) {
@@ -161,12 +165,12 @@ export function AdminRegisterPage() {
   return (
     <section className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5">
-        <AdminMetricCard icon="💶" value={formatEuros(metrics.collected)} label="Total cobrado" tone="gold" />
+        <AdminMetricCard icon="💶" value={formatCurrency(metrics.collected)} label="Total cobrado" tone="gold" />
         <AdminMetricCard icon="🎟️" value={metrics.credits} label="Clases a favor" tone="lime" />
         <AdminMetricCard icon="🏋️" value={metrics.attended} label="Asistencias" />
         <AdminMetricCard
           icon="📌"
-          value={formatEuros(metrics.debt)}
+          value={formatCurrency(metrics.debt)}
           label="Pendiente cobro"
           tone={metrics.debt > 0 ? 'danger' : 'lime'}
         />
@@ -237,10 +241,10 @@ export function AdminRegisterPage() {
             <div className="flex flex-wrap gap-2">
               {PAY_PRESETS.map((preset) => (
                 <Button
-                  key={preset.cents}
+                  key={preset.euros}
                   size="sm"
-                  variant={Number(payAmount) === preset.cents ? 'gold' : 'secondary'}
-                  onClick={() => setPayAmount(String(preset.cents))}
+                  variant={Number(payAmount) === preset.euros ? 'gold' : 'secondary'}
+                  onClick={() => setPayAmount(formatEurosInput(eurosToCents(preset.euros)))}
                 >
                   {preset.label}
                 </Button>
@@ -248,13 +252,14 @@ export function AdminRegisterPage() {
             </div>
             <Input
               id="pay-amount"
-              label="Importe (céntimos)"
+              label="Importe (€)"
               type="number"
-              min={CLASS_PRICE_CENTS}
-              step={CLASS_PRICE_CENTS}
+              min={CLASS_PRICE_EUROS}
+              step={0.01}
+              placeholder="7.00"
               value={payAmount}
               onChange={(event) => setPayAmount(event.target.value)}
-              hint={`${formatEuros(Number(payAmount) || 0)} · ${CLASS_PRICE_CENTS / 100} €/clase`}
+              hint={`Ej.: 21,00 € · ${CLASS_PRICE_EUROS} €/clase`}
             />
             <Input
               id="pay-date"
@@ -318,7 +323,7 @@ export function AdminRegisterPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-ink-soft">{row.total_attended}</td>
-                    <td className="px-4 py-3 text-ink-soft">{formatEuros(row.paid_cents)}</td>
+                    <td className="px-4 py-3 text-ink-soft">{formatCurrency(row.paid_cents)}</td>
                     <td className="px-4 py-3 text-ink-soft">{row.available_classes}</td>
                     <td className="px-4 py-3 text-ink-soft">{row.debt_classes}</td>
                     <td className="px-4 py-3">{balanceBadge(row)}</td>

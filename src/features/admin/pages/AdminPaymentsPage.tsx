@@ -6,12 +6,12 @@ import { AdminSection } from '@/features/admin/components/AdminSection'
 import { useToast } from '@/hooks/useToast'
 import {
   adminService,
-  CLASS_PRICE_CENTS,
   manualAdminService,
   paymentsService,
   toFriendlyMessage,
 } from '@/services'
 import type { AdminProfile, ManualPaymentRecord, Payment, PaymentStatus } from '@/types'
+import { eurosToCents, formatCurrency, formatEurosInput } from '@/utils/currency'
 import { formatShortDate } from '@/utils/datetime'
 
 const statusLabels: Record<PaymentStatus, string> = {
@@ -35,10 +35,6 @@ function displayName(profile: AdminProfile): string {
   return [profile.name, profile.last_name].filter(Boolean).join(' ')
 }
 
-function formatEuros(cents: number): string {
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(cents / 100)
-}
-
 export function AdminPaymentsPage() {
   const { showToast } = useToast()
   const [profiles, setProfiles] = useState<AdminProfile[]>([])
@@ -48,7 +44,7 @@ export function AdminPaymentsPage() {
   const [saving, setSaving] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState('')
   const [month, setMonth] = useState(currentMonth())
-  const [amount, setAmount] = useState('4500')
+  const [amount, setAmount] = useState('45.00')
   const [editPayment, setEditPayment] = useState<ManualPaymentRecord | null>(null)
   const [editAmount, setEditAmount] = useState('')
   const [editDate, setEditDate] = useState('')
@@ -82,12 +78,18 @@ export function AdminPaymentsPage() {
       return
     }
 
+    const euros = Number(amount)
+    if (!euros || euros <= 0) {
+      showToast('Introduce un importe válido', 'error')
+      return
+    }
+
     setSaving(true)
     try {
       await paymentsService.upsert({
         user_id: selectedUserId,
         month,
-        amount_cents: Number(amount),
+        amount_cents: eurosToCents(euros),
         status: 'pending',
       })
       showToast('Cuota registrada', 'success')
@@ -114,15 +116,15 @@ export function AdminPaymentsPage() {
 
   function openEdit(payment: ManualPaymentRecord) {
     setEditPayment(payment)
-    setEditAmount(String(payment.amount_cents))
+    setEditAmount(formatEurosInput(payment.amount_cents))
     setEditDate(payment.paid_at)
     setEditNotes(payment.notes ?? '')
   }
 
   async function handleSaveEdit() {
     if (!editPayment) return
-    const amountCents = Number(editAmount)
-    if (!amountCents || amountCents <= 0) {
+    const euros = Number(editAmount)
+    if (!euros || euros <= 0) {
       showToast('Importe no válido', 'error')
       return
     }
@@ -131,7 +133,7 @@ export function AdminPaymentsPage() {
     try {
       await manualAdminService.updatePayment({
         id: editPayment.id,
-        amountCents,
+        amountCents: eurosToCents(euros),
         paidAt: editDate,
         notes: editNotes.trim() || null,
       })
@@ -201,12 +203,14 @@ export function AdminPaymentsPage() {
             />
             <Input
               id="payment-amount"
-              label="Importe (céntimos)"
+              label="Importe (€)"
               type="number"
-              min={0}
+              min={0.01}
+              step={0.01}
+              placeholder="45.00"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              hint="Ej.: 4500 = 45,00 €"
+              hint="Ej.: 45,00 €"
             />
             <Button variant="gold" loading={saving} onClick={() => void handleCreatePayment()}>
               Guardar cuota
@@ -252,7 +256,7 @@ export function AdminPaymentsPage() {
                         </td>
                         <td className="px-4 py-3 text-ink-soft">{payment?.month ?? '—'}</td>
                         <td className="px-4 py-3 text-ink-soft">
-                          {payment ? formatEuros(payment.amount_cents) : '—'}
+                          {payment ? formatCurrency(payment.amount_cents) : '—'}
                         </td>
                         <td className="px-4 py-3">
                           {payment ? (
@@ -319,7 +323,7 @@ export function AdminPaymentsPage() {
                       <td className="px-4 py-3 text-ink-soft">{formatShortDate(payment.paid_at)}</td>
                       <td className="px-4 py-3 font-medium text-ink">{payment.user_name}</td>
                       <td className="px-4 py-3 text-ink-soft">
-                        {formatEuros(payment.amount_cents)}
+                        {formatCurrency(payment.amount_cents)}
                         <span className="ml-1 text-xs text-ink-muted">
                           ({payment.classes_credited} cls.)
                         </span>
@@ -369,12 +373,14 @@ export function AdminPaymentsPage() {
         <div className="flex flex-col gap-3">
           <Input
             id="edit-amount"
-            label="Importe (céntimos)"
+            label="Importe (€)"
             type="number"
-            min={CLASS_PRICE_CENTS}
-            step={CLASS_PRICE_CENTS}
+            min={0.01}
+            step={0.01}
+            placeholder="21.00"
             value={editAmount}
             onChange={(event) => setEditAmount(event.target.value)}
+            hint="Ej.: 21,00 € (7 €/clase)"
           />
           <Input
             id="edit-date"
