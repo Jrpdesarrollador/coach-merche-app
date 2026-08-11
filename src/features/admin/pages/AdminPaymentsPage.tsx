@@ -179,13 +179,6 @@ export function AdminPaymentsPage() {
   return (
     <>
       <section className="flex flex-col gap-4">
-        <div>
-          <h1 className="font-display text-2xl text-ink">Pagos</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Cuotas mensuales de app + pagos manuales 7 €/clase
-          </p>
-        </div>
-
         <Card highlight>
           <p className="mb-3 font-display text-lg text-ink">Registrar cuota mensual</p>
           <div className="flex flex-col gap-3">

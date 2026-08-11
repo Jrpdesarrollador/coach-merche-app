@@ -95,11 +95,6 @@ export function AdminNotificationsPage() {
 
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <h1 className="font-display text-2xl text-ink">Avisos</h1>
-        <p className="mt-1 text-sm text-ink-muted">Envía recordatorios y consulta el historial</p>
-      </div>
-
       <Card highlight>
         <p className="mb-3 font-display text-lg text-ink">Enviar aviso manual</p>
         <div className="flex flex-col gap-3">

@@ -11,12 +11,12 @@ function tabClassName(isActive: boolean) {
   )
 }
 
-/** Pestañas horizontales sticky con grupos (tablet/desktop). */
+/** Pestañas horizontales con grupos (tablet/desktop) — fijas en el layout admin. */
 export function AdminTabNav() {
   return (
     <nav
       aria-label="Secciones del panel"
-      className="sticky top-0 z-40 -mx-1 hidden flex-col gap-2 bg-linear-to-b from-bg-primary/97 via-bg-primary/88 to-transparent py-3 sm:flex"
+      className="-mx-1 hidden flex-col gap-2 border-b border-line/60 py-2.5 sm:flex"
     >
       {adminNavGroups.map((group) => (
         <div key={group.id} className="flex flex-col gap-1.5">

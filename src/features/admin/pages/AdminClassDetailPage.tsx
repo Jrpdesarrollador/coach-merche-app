@@ -104,7 +104,7 @@ export function AdminClassDetailPage() {
       </Link>
 
       <div>
-        <h1 className="font-display text-2xl text-ink">{classTitle || 'Detalle de clase'}</h1>
+        <h2 className="font-display text-2xl text-ink">{classTitle || 'Detalle de clase'}</h2>
         {classMeta && <p className="mt-1 text-sm text-ink-muted">{classMeta}</p>}
       </div>
 

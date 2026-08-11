@@ -294,13 +294,7 @@ export function AdminHistoryPage() {
   return (
     <>
       <section className="flex flex-col gap-4 print:gap-2">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between print:hidden">
-          <div>
-            <h1 className="font-display text-2xl text-ink">Historial</h1>
-            <p className="mt-1 text-sm text-ink-muted">
-              Timeline unificada: pagos, cuotas, asistencias y reservas
-            </p>
-          </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-end print:hidden">
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" size="sm" onClick={() => window.print()}>
               Imprimir / PDF

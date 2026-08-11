@@ -31,11 +31,6 @@ export function AdminClassesPage() {
 
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <h1 className="font-display text-2xl text-ink">Clases</h1>
-        <p className="mt-1 text-sm text-ink-muted">Próximas sesiones y alumnas apuntadas</p>
-      </div>
-
       {classes.length === 0 ? (
         <EmptyState
           title="No hay clases programadas"

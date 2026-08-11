@@ -160,13 +160,6 @@ export function AdminRegisterPage() {
 
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <h1 className="font-display text-2xl text-ink">Registrar</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Asistencia manual y pagos en efectivo — complementa reservas de la app
-        </p>
-      </div>
-
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5">
         <AdminMetricCard icon="💶" value={formatEuros(metrics.collected)} label="Total cobrado" tone="gold" />
         <AdminMetricCard icon="🎟️" value={metrics.credits} label="Clases a favor" tone="lime" />

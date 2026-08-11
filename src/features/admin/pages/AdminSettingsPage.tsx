@@ -55,13 +55,6 @@ export function AdminSettingsPage() {
   return (
     <>
       <section className="flex flex-col gap-4">
-        <div>
-          <h1 className="font-display text-2xl text-ink">Configuración</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Restablecer datos manuales con confirmación de seguridad
-          </p>
-        </div>
-
         <AdminSection
           title="Restablecer datos manuales"
           description="Estas acciones no se pueden deshacer. Las usuarias y cuentas de la app no se eliminan."
