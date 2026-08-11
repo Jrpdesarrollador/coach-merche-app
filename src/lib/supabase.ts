@@ -6,7 +6,10 @@ import {
 } from '@/lib/supabaseConfig'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+/** Acepta anon key clásica o publishable key (`sb_publishable_...`) de Supabase. */
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 
 const configProblems = findSupabaseConfigProblems(supabaseUrl, supabaseAnonKey)
 

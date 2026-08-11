@@ -531,13 +531,63 @@ En el proyecto → **Settings → Environment Variables**, añade estas variable
 | -------------------------- | ----------- | ------------------------------------------------ |
 | `VITE_SUPABASE_URL`        | Sí          | Project URL de Supabase                          |
 | `VITE_SUPABASE_ANON_KEY`   | Sí          | Clave anon / publishable del cliente             |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | No     | Alias de `VITE_SUPABASE_ANON_KEY` (mismo valor)  |
 | `VITE_APP_TIMEZONE`        | No          | Por defecto `Europe/Madrid` si no se define      |
 | `VITE_VAPID_PUBLIC_KEY`    | No          | Clave pública VAPID para push PWA (Fase 13)      |
 
 > **No subas** `.env.local` ni la `service_role` key. Todo lo que empieza por `VITE_`
 > acaba en el bundle del navegador.
 
-Tras cambiar variables, redeploya: **Deployments → … → Redeploy**.
+Tras cambiar variables, **redeploy obligatorio**: Vite embebe `VITE_*` en el bundle en
+**tiempo de build**. Añadir o editar variables en el dashboard **no** afecta al deployment
+ya publicado hasta que vuelvas a desplegar.
+
+1. **Deployments** → el deployment activo → **…** → **Redeploy** (marca *Use existing
+   Build Cache* si quieres; lo importante es un build nuevo).
+2. O haz un push vacío a `main` para disparar un deployment automático.
+
+### Solución de problemas — «Todavía no hemos conectado la app con el servidor»
+
+**Síntomas:** en `/login` o `/registro` aparece el aviso amarillo *«Todavía no hemos
+conectado la app con el servidor…»* y, al intentar entrar, el toast *«La app todavía no
+está conectada con el servidor…»*.
+
+**Causa más habitual:** el deployment se construyó **antes** de definir
+`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en Vercel. El bundle lleva valores
+placeholder (`placeholder.supabase.co`) y la app detecta correctamente que no hay backend.
+
+**Cómo comprobarlo (DevTools → Sources):** abre el JS principal (`/assets/index-*.js`) y
+busca `placeholder.supabase.co`. Si aparece, falta redeploy con las variables ya
+configuradas.
+
+**Solución:**
+
+1. En Vercel → **Settings → Environment Variables**, confirma que existen **exactamente**
+   (respetando mayúsculas):
+
+   | Variable                 | Valor esperado                                      |
+   | ------------------------ | --------------------------------------------------- |
+   | `VITE_SUPABASE_URL`      | `https://<PROJECT_REF>.supabase.co`                 |
+   | `VITE_SUPABASE_ANON_KEY` | Clave **anon / publishable** (no la `service_role`) |
+
+   Alias aceptado: `VITE_SUPABASE_PUBLISHABLE_KEY` (mismo valor que la anon key).
+
+2. En Supabase → **Project Settings → Data API / API Keys**:
+   - **Project URL** → `VITE_SUPABASE_URL`
+   - **anon public** o **publishable** (`eyJ…` o `sb_publishable_…`) →
+     `VITE_SUPABASE_ANON_KEY`
+
+3. **Redeploy** (ver arriba). Espera a que termine el build y recarga con caché limpia
+   (Ctrl+Shift+R).
+
+4. Tras el redeploy, el aviso debe desaparecer y el login debe conectar con Supabase.
+
+**Otras causas posibles:**
+
+- Variable mal escrita (`SUPABASE_URL` sin prefijo `VITE_` no llega al frontend).
+- Valor placeholder sin sustituir (`YOUR_SUPABASE_ANON_KEY` o URL de `.env.example`).
+- Clave truncada al copiar/pegar (menos de 20 caracteres).
+- `service_role` key en lugar de la clave pública (nunca usar la secreta en `VITE_*`).
 
 ### 3. Supabase Auth — URLs de producción
 
