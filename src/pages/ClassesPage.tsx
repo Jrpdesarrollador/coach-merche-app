@@ -1,17 +1,16 @@
-import { CalendarIcon } from '@/components/icons'
+import { useState } from 'react'
+import { CalendarViewToggle, MonthView, WeekView, type CalendarViewMode } from '@/features/classes'
 import { TopBar } from '@/components/navigation/TopBar'
-import { EmptyState } from '@/components/ui'
 
 export function ClassesPage() {
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('week')
+
   return (
     <>
       <TopBar title="Clases" />
       <section className="flex flex-col gap-4 pt-2">
-        <EmptyState
-          title="No hay clases esta semana"
-          description="Merche está preparando lo próximo 💚"
-          icon={<CalendarIcon width={28} height={28} />}
-        />
+        <CalendarViewToggle mode={viewMode} onChange={setViewMode} />
+        {viewMode === 'week' ? <WeekView /> : <MonthView />}
       </section>
     </>
   )

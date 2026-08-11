@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/layouts/AppShell'
 import { AdminPage } from '@/pages/AdminPage'
 import { ClassesPage } from '@/pages/ClassesPage'
+import { ClassDetailPage } from '@/pages/ClassDetailPage'
 import { DesignSystemPage } from '@/pages/DesignSystemPage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { HomePage } from '@/pages/HomePage'
@@ -34,6 +35,7 @@ export function AppRouter() {
           <Route element={<AppShell />}>
             <Route index element={<HomePage />} />
             <Route path="clases" element={<ClassesPage />} />
+            <Route path="clases/:classId" element={<ClassDetailPage />} />
             <Route path="entrenamientos" element={<WorkoutsPage />} />
             <Route path="recompensas" element={<RewardsPage />} />
             <Route path="perfil" element={<ProfilePage />} />

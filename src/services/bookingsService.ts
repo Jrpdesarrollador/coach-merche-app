@@ -21,6 +21,25 @@ async function getActiveForClass(
   return data
 }
 
+/** Reservas activas de la alumna para varias clases (ids de clase). */
+async function getActiveClassIds(
+  userId: string,
+  classIds: string[],
+): Promise<Set<string>> {
+  if (!isSupabaseConfigured || !classIds.length) return new Set()
+
+  const { data, error } = await supabase
+    .from('class_bookings')
+    .select('class_id')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .in('class_id', classIds)
+
+  if (error) throw serviceError(error)
+  return new Set((data ?? []).map((row) => row.class_id))
+}
+
 export const bookingsService = {
   getActiveForClass,
+  getActiveClassIds,
 }
