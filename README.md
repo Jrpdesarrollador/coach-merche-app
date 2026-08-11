@@ -508,10 +508,92 @@ npm run build
 
 ## Deploy (Vercel)
 
-1. Conectar el repositorio GitHub `coach-merche-app`
-2. Framework preset: Vite
-3. Definir variables de entorno `VITE_SUPABASE_*`
-4. Deploy automático desde `main`
+La app incluye `vercel.json` con preset Vite, salida `dist`, rewrites SPA para React
+Router y cabeceras para PWA (service worker, manifest e iconos).
+
+### 1. Conectar el repositorio
+
+1. Entra en [vercel.com/new](https://vercel.com/new) e inicia sesión con GitHub.
+2. Importa el repositorio **`Jrpdesarrollador/coach-merche-app`**.
+3. Vercel detecta **Vite** automáticamente. No cambies el directorio raíz salvo que
+   el proyecto viva en un subfolder (no es el caso).
+4. **Build Command:** `npm run build` (ya definido en `vercel.json`).
+5. **Output Directory:** `dist` (ya definido en `vercel.json`).
+6. Pulsa **Deploy**. Los pushes a `main` despliegan producción; cada PR genera una
+   URL de preview (`*.vercel.app`).
+
+### 2. Variables de entorno en Vercel
+
+En el proyecto → **Settings → Environment Variables**, añade estas variables para
+**Production**, **Preview** y **Development**:
+
+| Variable                   | Obligatoria | Descripción                                      |
+| -------------------------- | ----------- | ------------------------------------------------ |
+| `VITE_SUPABASE_URL`        | Sí          | Project URL de Supabase                          |
+| `VITE_SUPABASE_ANON_KEY`   | Sí          | Clave anon / publishable del cliente             |
+| `VITE_APP_TIMEZONE`        | No          | Por defecto `Europe/Madrid` si no se define      |
+| `VITE_VAPID_PUBLIC_KEY`    | No          | Clave pública VAPID para push PWA (Fase 13)      |
+
+> **No subas** `.env.local` ni la `service_role` key. Todo lo que empieza por `VITE_`
+> acaba en el bundle del navegador.
+
+Tras cambiar variables, redeploya: **Deployments → … → Redeploy**.
+
+### 3. Supabase Auth — URLs de producción
+
+En el dashboard de Supabase → **Authentication → URL Configuration**:
+
+| Campo            | Valor (sustituye por tu dominio)                    |
+| ---------------- | --------------------------------------------------- |
+| **Site URL**     | `https://coach-merche-app.vercel.app`               |
+| **Redirect URLs**| `https://coach-merche-app.vercel.app/nueva-contrasena` |
+
+Añade también la URL de callback de OAuth si usas proveedores externos:
+
+```text
+https://coach-merche-app.vercel.app/**
+```
+
+> Sustituye `coach-merche-app` por el subdominio real que asigne Vercel al importar
+> el repo (p. ej. `coach-merche-app-jrpdesarrollador.vercel.app`). Las URLs deben
+> coincidir **exactamente** con el dominio público.
+
+**Previews de Vercel:** cada rama/PR tiene su propio `*.vercel.app`. Si quieres probar
+recuperación de contraseña en preview, añade también
+`https://<preview-url>/nueva-contrasena` en Redirect URLs. Lo habitual es probar auth
+solo en local y en el dominio de producción.
+
+**Desarrollo local** (ya configurado en `supabase/config.toml`):
+
+```text
+http://localhost:5173/nueva-contrasena
+http://127.0.0.1:5173/nueva-contrasena
+```
+
+### 4. Deploy con CLI (opcional)
+
+```bash
+npm install
+npx vercel login          # solo la primera vez
+npx vercel --prod         # producción
+```
+
+Si no hay token de Vercel, usa el dashboard (pasos 1–3). El CLI no es obligatorio.
+
+### 5. Checklist post-deploy
+
+- [ ] La app carga en HTTPS sin errores en consola.
+- [ ] Login y registro funcionan contra Supabase.
+- [ ] Recuperación de contraseña: el enlace del correo abre `/nueva-contrasena`.
+- [ ] Rutas profundas (`/clases`, `/gestion`, etc.) cargan al refrescar (SPA rewrite).
+- [ ] PWA: «Añadir a pantalla de inicio» muestra icono y nombre «Coach Merche».
+- [ ] Service worker registrado (DevTools → Application → Service Workers).
+- [ ] Merche/Jesús pueden acceder a `/gestion` con rol admin en Supabase.
+
+### 6. Dominio personalizado (opcional)
+
+En Vercel → **Settings → Domains** añade tu dominio (p. ej. `app.coachmerche.com`).
+Actualiza **Site URL** y **Redirect URLs** en Supabase con el dominio definitivo.
 
 ## Assets de marca
 
@@ -538,4 +620,4 @@ Colocar los archivos oficiales en `public/assets/brand/` cuando estén disponibl
 | 12 — Storage                     | Pendiente                                                    |
 | 13 — PWA                         | Pendiente — push notifications + cron recordatorios          |
 | 14 — QA global                   | Pendiente                                                    |
-| 15 — Producción (Vercel)         | Pendiente                                                    |
+| 15 — Producción (Vercel)         | ✅ Completada — `vercel.json`, guía deploy y env vars        |
