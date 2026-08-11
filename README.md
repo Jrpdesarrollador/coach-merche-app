@@ -295,6 +295,34 @@ where p.role = 'admin';
 4. Merche debe cerrar sesión y volver a entrar en la app para que se recargue su
    perfil y aparezca el área de gestión.
 
+Alternativa: el script `supabase/scripts/set-admins.sql` asigna admin a Jesús y
+Merche en un solo `UPDATE`. Para Merche concreta:
+
+```sql
+update public.profiles
+set role = 'admin', name = 'Merche'
+where id = (select id from auth.users where email = 'merche.valverde@outlook.com');
+```
+
+Si la cuenta aún no existe, créala en **Authentication → Users → Add user** con
+**Auto Confirm User** (útil si el registro público está bloqueado por rate limit).
+
+#### Vista dual admin/alumna (Merche y Jesús)
+
+Merche (`merche.valverde@outlook.com`) y Jesús (`jrodriguezpomeda@gmail.com`) usan
+**un solo login** para las dos experiencias. No hace falta crear un segundo
+usuario alumna.
+
+Requisitos:
+
+- `profiles.role = 'admin'` en Supabase (Paso 8 o `set-admins.sql`).
+- Email en la allowlist de `src/features/auth/viewMode.ts`.
+
+En la app: **Perfil** → tarjeta **Vista de la app** → alternar **Ver como admin**
+/ **Ver como alumna**. La preferencia se guarda en el dispositivo. El rol en BD
+sigue siendo `admin`; en vista alumna se oculta gestión y se muestra la
+experiencia de una alumna.
+
 > A partir de aquí, un admin sí puede cambiar el rol de otras cuentas. Una alumna
 > nunca puede ascenderse a sí misma: el trigger lanza el error
 > `ROLE_CHANGE_NOT_ALLOWED`.
