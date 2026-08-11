@@ -5,8 +5,10 @@ export const adminNavGroups = [
     label: 'Admin',
     items: [
       { to: '/gestion', label: 'Resumen', icon: '⌂', end: true as const },
+      { to: '/gestion/registrar', label: 'Registrar', icon: '＋', end: false as const },
       { to: '/gestion/usuarios', label: 'Usuarios', icon: '👥', end: false as const },
       { to: '/gestion/pagos', label: 'Pagos', icon: '€', end: false as const },
+      { to: '/gestion/configuracion', label: 'Ajustes', icon: '⚙', end: false as const },
       { to: '/gestion/informes', label: 'Informes', icon: '📊', end: false as const },
     ],
   },

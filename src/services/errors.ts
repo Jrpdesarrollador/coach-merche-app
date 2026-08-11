@@ -91,6 +91,8 @@ const messagesByFragment: [string, string][] = [
   // Membresía admin
   ['invalid_tier', 'El plan seleccionado no es válido.'],
   ['subscription_plan_required', 'Elige un plan mensual o anual para Pro.'],
+  ['payment_not_found', 'No encontramos ese pago.'],
+  ['email_exists', 'Ya existe una cuenta con ese email.'],
   ['user_not_found', 'No encontramos a esa alumna.'],
 ]
 

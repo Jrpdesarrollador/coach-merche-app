@@ -9,6 +9,8 @@ import {
   AdminPaymentsPage,
   AdminPostsPage,
   AdminReportsPage,
+  AdminRegisterPage,
+  AdminSettingsPage,
   AdminUsersPage,
   AdminWorkoutsPage,
 } from '@/features/admin'
@@ -60,6 +62,7 @@ export function AppRouter() {
           <Route element={<AdminRoute />}>
             <Route element={<AdminLayout />}>
               <Route path="gestion" element={<AdminDashboardPage />} />
+              <Route path="gestion/registrar" element={<AdminRegisterPage />} />
               <Route path="gestion/usuarios" element={<AdminUsersPage />} />
               <Route path="gestion/clases" element={<AdminClassesPage />} />
               <Route path="gestion/clases/:id" element={<AdminClassDetailPage />} />
@@ -69,6 +72,7 @@ export function AppRouter() {
               <Route path="gestion/notificaciones" element={<AdminNotificationsPage />} />
               <Route path="gestion/chat" element={<AdminChatPage />} />
               <Route path="gestion/informes" element={<AdminReportsPage />} />
+              <Route path="gestion/configuracion" element={<AdminSettingsPage />} />
             </Route>
           </Route>
         </Route>

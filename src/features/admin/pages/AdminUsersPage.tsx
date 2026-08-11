@@ -7,13 +7,15 @@ import {
   Card,
   ConfirmDialog,
   EmptyState,
+  Input,
   Modal,
   Select,
   Skeleton,
+  Textarea,
 } from '@/components/ui'
 import { AdminSection } from '@/features/admin/components/AdminSection'
 import { useToast } from '@/hooks/useToast'
-import { adminUsersService, toFriendlyMessage } from '@/services'
+import { adminUsersService, manualAdminService, toFriendlyMessage } from '@/services'
 import type { AdminUserWithStats, MembershipTier, SubscriptionPlan } from '@/types'
 import { formatShortDate } from '@/utils/datetime'
 
@@ -48,6 +50,17 @@ export function AdminUsersPage() {
   const [tierModal, setTierModal] = useState<{ user: AdminUserWithStats; action: TierAction } | null>(
     null,
   )
+  const [newName, setNewName] = useState('')
+  const [newLastName, setNewLastName] = useState('')
+  const [newEmail, setNewEmail] = useState('')
+  const [newNotes, setNewNotes] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [editUser, setEditUser] = useState<AdminUserWithStats | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editLastName, setEditLastName] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editNotes, setEditNotes] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
 
   const pending = useMemo(
     () => users.filter((user) => user.role === 'user' && user.approval_status === 'pending'),
@@ -94,6 +107,62 @@ export function AdminUsersPage() {
     }
   }
 
+  async function handleCreateManual() {
+    if (!newName.trim()) {
+      showToast('Escribe un nombre', 'error')
+      return
+    }
+
+    setCreating(true)
+    try {
+      await manualAdminService.createStudent({
+        name: newName,
+        lastName: newLastName || undefined,
+        email: newEmail || undefined,
+        notes: newNotes || undefined,
+      })
+      showToast(`${newName.trim()} añadida como alumna manual`)
+      setNewName('')
+      setNewLastName('')
+      setNewEmail('')
+      setNewNotes('')
+      await reload()
+    } catch (error) {
+      showToast(toFriendlyMessage(error), 'error')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  function openEdit(user: AdminUserWithStats) {
+    setEditUser(user)
+    setEditName(user.name)
+    setEditLastName(user.last_name ?? '')
+    setEditEmail(user.email.includes('@coach-merche.local') ? '' : user.email)
+    setEditNotes('')
+  }
+
+  async function handleSaveEdit() {
+    if (!editUser) return
+
+    setEditSaving(true)
+    try {
+      await manualAdminService.updateStudent(editUser.id, {
+        name: editName.trim(),
+        lastName: editLastName.trim() || null,
+        email: editEmail.trim() || undefined,
+        notes: editNotes.trim() || null,
+      })
+      showToast('Datos actualizados', 'success')
+      setEditUser(null)
+      await reload()
+    } catch (error) {
+      showToast(toFriendlyMessage(error), 'error')
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
   async function handleTierChange() {
     if (!tierModal) return
 
@@ -132,6 +201,46 @@ export function AdminUsersPage() {
 
   return (
     <>
+      <AdminSection
+        title="Añadir alumna manual"
+        description="Para alumnas que aún no usan la app — efectivo, lista propia del preview."
+      >
+        <Card className="flex flex-col gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              id="new-student-name"
+              label="Nombre"
+              value={newName}
+              onChange={(event) => setNewName(event.target.value)}
+            />
+            <Input
+              id="new-student-lastname"
+              label="Apellidos (opcional)"
+              value={newLastName}
+              onChange={(event) => setNewLastName(event.target.value)}
+            />
+            <Input
+              id="new-student-email"
+              label="Email (opcional)"
+              type="email"
+              value={newEmail}
+              onChange={(event) => setNewEmail(event.target.value)}
+              hint="Si no indicas email, se crea un perfil interno."
+            />
+            <Textarea
+              id="new-student-notes"
+              label="Notas admin"
+              value={newNotes}
+              onChange={(event) => setNewNotes(event.target.value)}
+              rows={2}
+            />
+          </div>
+          <Button variant="gold" loading={creating} onClick={() => void handleCreateManual()}>
+            Crear alumna manual
+          </Button>
+        </Card>
+      </AdminSection>
+
       <AdminSection
         title="Pendientes de validación"
         description="Aprueba nuevas alumnas y asigna Basic o Pro."
@@ -236,6 +345,9 @@ export function AdminUsersPage() {
 
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                       <Badge tone={isPro ? 'gold' : 'neutral'}>{tierLabels[tier]}</Badge>
+                      <Button size="sm" variant="secondary" onClick={() => openEdit(user)}>
+                        Editar
+                      </Button>
                       {isPro && user.subscription_plan && (
                         <Badge tone="neutral">
                           {user.subscription_plan === 'monthly' ? '8,99 €/mes' : '80 €/año'}
@@ -271,6 +383,51 @@ export function AdminUsersPage() {
           </ul>
         )}
       </AdminSection>
+
+      <Modal
+        open={editUser !== null}
+        onClose={() => setEditUser(null)}
+        title="Editar alumna"
+        footer={
+          <>
+            <Button variant="secondary" fullWidth onClick={() => setEditUser(null)}>
+              Cancelar
+            </Button>
+            <Button variant="gold" fullWidth loading={editSaving} onClick={() => void handleSaveEdit()}>
+              Guardar
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <Input
+            id="edit-name"
+            label="Nombre"
+            value={editName}
+            onChange={(event) => setEditName(event.target.value)}
+          />
+          <Input
+            id="edit-lastname"
+            label="Apellidos"
+            value={editLastName}
+            onChange={(event) => setEditLastName(event.target.value)}
+          />
+          <Input
+            id="edit-email"
+            label="Email"
+            type="email"
+            value={editEmail}
+            onChange={(event) => setEditEmail(event.target.value)}
+          />
+          <Textarea
+            id="edit-notes"
+            label="Notas admin"
+            value={editNotes}
+            onChange={(event) => setEditNotes(event.target.value)}
+            rows={2}
+          />
+        </div>
+      </Modal>
 
       <Modal
         open={tierModal?.action === 'upgrade'}

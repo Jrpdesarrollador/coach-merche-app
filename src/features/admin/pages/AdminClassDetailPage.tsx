@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ChevronLeftIcon, UsersIcon } from '@/components/icons'
-import { Avatar, Badge, Card, EmptyState, Skeleton } from '@/components/ui'
-import { adminService, classesService } from '@/services'
-import type { ClassParticipant } from '@/types'
+import { Avatar, Badge, Button, Card, EmptyState, Select, Skeleton } from '@/components/ui'
+import { useToast } from '@/hooks/useToast'
+import { adminService, classesService, manualAdminService, toFriendlyMessage } from '@/services'
+import type { AdminProfile, ClassParticipant } from '@/types'
 import { formatClassDate, formatClassTime, formatShortDate } from '@/utils/datetime'
 
 function displayName(name: string, lastName: string | null): string {
@@ -12,29 +13,74 @@ function displayName(name: string, lastName: string | null): string {
 
 export function AdminClassDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { showToast } = useToast()
   const [participants, setParticipants] = useState<ClassParticipant[]>([])
+  const [profiles, setProfiles] = useState<AdminProfile[]>([])
   const [classTitle, setClassTitle] = useState('')
   const [classMeta, setClassMeta] = useState('')
   const [loading, setLoading] = useState(true)
+  const [assignUserId, setAssignUserId] = useState('')
+  const [assigning, setAssigning] = useState(false)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+
+  async function reload(classId: string) {
+    const [rows, profileRows, detail] = await Promise.all([
+      adminService.getClassParticipants(classId),
+      adminService.listProfiles(),
+      classesService.getClassById(classId),
+    ])
+    setParticipants(rows)
+    setProfiles(profileRows.filter((profile) => profile.role === 'user'))
+    if (detail) {
+      setClassTitle(detail.workout.title)
+      setClassMeta(
+        `${formatClassDate(detail.class.date)} · ${formatClassTime(detail.class.start_time)} · ${detail.class.location}`,
+      )
+    }
+  }
 
   useEffect(() => {
     if (!id) return
-
-    void Promise.all([
-      adminService.getClassParticipants(id),
-      classesService.getClassById(id),
-    ])
-      .then(([rows, detail]) => {
-        setParticipants(rows)
-        if (detail) {
-          setClassTitle(detail.workout.title)
-          setClassMeta(
-            `${formatClassDate(detail.class.date)} · ${formatClassTime(detail.class.start_time)} · ${detail.class.location}`,
-          )
-        }
-      })
-      .finally(() => setLoading(false))
+    void reload(id).finally(() => setLoading(false))
   }, [id])
+
+  const availableStudents = profiles.filter(
+    (profile) => !participants.some((participant) => participant.user_id === profile.id),
+  )
+
+  async function handleAssign() {
+    if (!id || !assignUserId) {
+      showToast('Elige una alumna', 'error')
+      return
+    }
+
+    setAssigning(true)
+    try {
+      await manualAdminService.assignToClass(assignUserId, id)
+      showToast('Alumna añadida a la clase', 'success')
+      setAssignUserId('')
+      await reload(id)
+    } catch (error) {
+      showToast(toFriendlyMessage(error), 'error')
+    } finally {
+      setAssigning(false)
+    }
+  }
+
+  async function handleRemove(bookingId: string) {
+    if (!id) return
+
+    setRemovingId(bookingId)
+    try {
+      await manualAdminService.removeFromClass(bookingId)
+      showToast('Alumna quitada de la clase', 'success')
+      await reload(id)
+    } catch (error) {
+      showToast(toFriendlyMessage(error), 'error')
+    } finally {
+      setRemovingId(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -63,6 +109,32 @@ export function AdminClassDetailPage() {
       </div>
 
       <Card highlight>
+        <p className="mb-3 font-display text-lg text-ink">Añadir alumna manualmente</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <Select
+            id="assign-user"
+            label="Alumna"
+            value={assignUserId}
+            onChange={(event) => setAssignUserId(event.target.value)}
+            placeholder="Elige alumna"
+            options={availableStudents.map((student) => ({
+              value: student.id,
+              label: [student.name, student.last_name].filter(Boolean).join(' '),
+            }))}
+            className="flex-1"
+          />
+          <Button
+            variant="gold"
+            loading={assigning}
+            disabled={availableStudents.length === 0}
+            onClick={() => void handleAssign()}
+          >
+            Añadir a clase
+          </Button>
+        </div>
+      </Card>
+
+      <Card highlight>
         <div className="mb-3 flex items-center justify-between">
           <p className="font-display text-lg text-ink">Participantes</p>
           <Badge tone="gold">{participants.length} apuntadas</Badge>
@@ -71,13 +143,14 @@ export function AdminClassDetailPage() {
         {participants.length === 0 ? (
           <EmptyState
             title="Nadie apuntada todavía"
-            description="Cuando una alumna reserve, la verás aquí al instante."
+            description="Añade alumnas manualmente o espera reservas desde la app."
             icon={<UsersIcon width={24} height={24} />}
           />
         ) : (
           <ul className="flex flex-col gap-2">
             {participants.map((participant) => {
               const fullName = displayName(participant.name, participant.last_name)
+              const isManualBooking = participant.booking_source === 'manual'
               return (
                 <li
                   key={participant.booking_id}
@@ -92,12 +165,23 @@ export function AdminClassDetailPage() {
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <Badge tone="lime">Activa</Badge>
+                    <Badge tone={isManualBooking ? 'warning' : 'lime'}>
+                      {isManualBooking ? 'Manual' : 'App'}
+                    </Badge>
+                    {participant.is_manual && <Badge tone="neutral">Sin app</Badge>}
                     {participant.attendance_confirmed_at && (
                       <Badge tone={participant.attended ? 'lime' : 'neutral'}>
                         {participant.attended ? 'Asistió' : 'No asistió'}
                       </Badge>
                     )}
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      loading={removingId === participant.booking_id}
+                      onClick={() => void handleRemove(participant.booking_id)}
+                    >
+                      Quitar
+                    </Button>
                   </div>
                 </li>
               )

@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { CreditCardIcon } from '@/components/icons'
-import { Avatar, Badge, Button, Card, EmptyState, Input, Select, Skeleton } from '@/components/ui'
+import { Avatar, Badge, Button, Card, EmptyState, Input, Modal, Select, Skeleton } from '@/components/ui'
+import { AdminSection } from '@/features/admin/components/AdminSection'
 import { useToast } from '@/hooks/useToast'
-import { adminService, paymentsService, toFriendlyMessage } from '@/services'
-import type { AdminProfile, Payment, PaymentStatus } from '@/types'
+import {
+  adminService,
+  CLASS_PRICE_CENTS,
+  manualAdminService,
+  paymentsService,
+  toFriendlyMessage,
+} from '@/services'
+import type { AdminProfile, ManualPaymentRecord, Payment, PaymentStatus } from '@/types'
+import { formatShortDate } from '@/utils/datetime'
 
 const statusLabels: Record<PaymentStatus, string> = {
   pending: 'Pendiente',
@@ -34,11 +43,18 @@ export function AdminPaymentsPage() {
   const { showToast } = useToast()
   const [profiles, setProfiles] = useState<AdminProfile[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
+  const [manualPayments, setManualPayments] = useState<ManualPaymentRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState('')
   const [month, setMonth] = useState(currentMonth())
   const [amount, setAmount] = useState('4500')
+  const [editPayment, setEditPayment] = useState<ManualPaymentRecord | null>(null)
+  const [editAmount, setEditAmount] = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editNotes, setEditNotes] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const students = useMemo(
     () => profiles.filter((profile) => profile.role === 'user'),
@@ -46,12 +62,14 @@ export function AdminPaymentsPage() {
   )
 
   async function reload() {
-    const [profileRows, paymentRows] = await Promise.all([
+    const [profileRows, paymentRows, manualRows] = await Promise.all([
       adminService.listProfiles(),
       paymentsService.listAll(),
+      manualAdminService.listManualPayments(),
     ])
     setProfiles(profileRows)
     setPayments(paymentRows)
+    setManualPayments(manualRows)
   }
 
   useEffect(() => {
@@ -94,6 +112,52 @@ export function AdminPaymentsPage() {
     }
   }
 
+  function openEdit(payment: ManualPaymentRecord) {
+    setEditPayment(payment)
+    setEditAmount(String(payment.amount_cents))
+    setEditDate(payment.paid_at)
+    setEditNotes(payment.notes ?? '')
+  }
+
+  async function handleSaveEdit() {
+    if (!editPayment) return
+    const amountCents = Number(editAmount)
+    if (!amountCents || amountCents <= 0) {
+      showToast('Importe no válido', 'error')
+      return
+    }
+
+    setEditSaving(true)
+    try {
+      await manualAdminService.updatePayment({
+        id: editPayment.id,
+        amountCents,
+        paidAt: editDate,
+        notes: editNotes.trim() || null,
+      })
+      showToast('Pago actualizado', 'success')
+      setEditPayment(null)
+      await reload()
+    } catch (error) {
+      showToast(toFriendlyMessage(error), 'error')
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  async function handleDeleteManual(id: string) {
+    setDeletingId(id)
+    try {
+      await manualAdminService.deletePayment(id)
+      showToast('Pago eliminado', 'success')
+      await reload()
+    } catch (error) {
+      showToast(toFriendlyMessage(error), 'error')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   if (loading) {
     return (
       <section className="flex flex-col gap-3">
@@ -113,110 +177,227 @@ export function AdminPaymentsPage() {
   })
 
   return (
-    <section className="flex flex-col gap-4">
-      <div>
-        <h1 className="font-display text-2xl text-ink">Pagos</h1>
-        <p className="mt-1 text-sm text-ink-muted">Seguimiento manual de cuotas mensuales</p>
-      </div>
+    <>
+      <section className="flex flex-col gap-4">
+        <div>
+          <h1 className="font-display text-2xl text-ink">Pagos</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            Cuotas mensuales de app + pagos manuales 7 €/clase
+          </p>
+        </div>
 
-      <Card highlight>
-        <p className="mb-3 font-display text-lg text-ink">Registrar cuota</p>
+        <Card highlight>
+          <p className="mb-3 font-display text-lg text-ink">Registrar cuota mensual</p>
+          <div className="flex flex-col gap-3">
+            <Select
+              id="payment-user"
+              label="Alumna"
+              value={selectedUserId}
+              onChange={(event) => setSelectedUserId(event.target.value)}
+              placeholder="Elige alumna"
+              options={students.map((student) => ({
+                value: student.id,
+                label: displayName(student),
+              }))}
+            />
+            <Input
+              id="payment-month"
+              label="Mes (YYYY-MM)"
+              value={month}
+              onChange={(event) => setMonth(event.target.value)}
+            />
+            <Input
+              id="payment-amount"
+              label="Importe (céntimos)"
+              type="number"
+              min={0}
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              hint="Ej.: 4500 = 45,00 €"
+            />
+            <Button variant="gold" loading={saving} onClick={() => void handleCreatePayment()}>
+              Guardar cuota
+            </Button>
+          </div>
+        </Card>
+
+        <AdminSection
+          title="Cuotas mensuales"
+          description="Seguimiento de suscripción / cuota fija mensual"
+        >
+          {rows.length === 0 ? (
+            <EmptyState
+              title="Sin alumnas registradas"
+              description="Cuando haya alumnas podrás registrar sus cuotas."
+              icon={<CreditCardIcon width={24} height={24} />}
+            />
+          ) : (
+            <Card className="overflow-x-auto p-0">
+              <table className="w-full min-w-[32rem] text-sm">
+                <thead>
+                  <tr className="border-b border-line text-left text-xs tracking-wide text-ink-muted uppercase">
+                    <th className="px-4 py-3 font-semibold">Alumna</th>
+                    <th className="px-4 py-3 font-semibold">Mes</th>
+                    <th className="px-4 py-3 font-semibold">Importe</th>
+                    <th className="px-4 py-3 font-semibold">Estado</th>
+                    <th className="px-4 py-3 font-semibold">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(({ student, payment }) => {
+                    const key = payment?.id ?? student.id
+                    return (
+                      <tr key={key} className="border-b border-line/70 last:border-0">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <Avatar name={displayName(student)} size="sm" />
+                            <div>
+                              <p className="font-medium text-ink">{displayName(student)}</p>
+                              <p className="text-xs text-ink-muted">{student.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-ink-soft">{payment?.month ?? '—'}</td>
+                        <td className="px-4 py-3 text-ink-soft">
+                          {payment ? formatEuros(payment.amount_cents) : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          {payment ? (
+                            <Badge tone={statusTones[payment.status]}>
+                              {statusLabels[payment.status]}
+                            </Badge>
+                          ) : (
+                            <Badge tone="neutral">Sin cuota</Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {payment && (
+                            <Button
+                              size="sm"
+                              variant={payment.status === 'paid' ? 'secondary' : 'gold'}
+                              onClick={() => void toggleStatus(payment)}
+                            >
+                              {payment.status === 'paid' ? 'Marcar pendiente' : 'Marcar pagado'}
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </AdminSection>
+
+        <AdminSection
+          title="Pagos manuales (7 €/clase)"
+          description="Efectivo y transferencias — edita o elimina registros erróneos"
+          actions={
+            <Link
+              to="/gestion/registrar"
+              className="inline-flex min-h-9 items-center rounded-xl border border-line-olive px-3 text-xs font-bold text-lime"
+            >
+              + Nuevo pago
+            </Link>
+          }
+        >
+          {manualPayments.length === 0 ? (
+            <EmptyState
+              title="Sin pagos manuales"
+              description="Regístralos en Registrar o desde aquí cuando haya movimientos."
+              icon={<CreditCardIcon width={24} height={24} />}
+            />
+          ) : (
+            <Card className="overflow-x-auto p-0">
+              <table className="w-full min-w-[36rem] text-sm">
+                <thead>
+                  <tr className="border-b border-line text-left text-xs tracking-wide text-ink-muted uppercase">
+                    <th className="px-4 py-3 font-semibold">Fecha</th>
+                    <th className="px-4 py-3 font-semibold">Alumna</th>
+                    <th className="px-4 py-3 font-semibold">Importe</th>
+                    <th className="px-4 py-3 font-semibold">Notas</th>
+                    <th className="px-4 py-3 font-semibold">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {manualPayments.map((payment) => (
+                    <tr key={payment.id} className="border-b border-line/70 last:border-0">
+                      <td className="px-4 py-3 text-ink-soft">{formatShortDate(payment.paid_at)}</td>
+                      <td className="px-4 py-3 font-medium text-ink">{payment.user_name}</td>
+                      <td className="px-4 py-3 text-ink-soft">
+                        {formatEuros(payment.amount_cents)}
+                        <span className="ml-1 text-xs text-ink-muted">
+                          ({payment.classes_credited} cls.)
+                        </span>
+                      </td>
+                      <td className="max-w-[12rem] truncate px-4 py-3 text-ink-muted">
+                        {payment.notes ?? '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="secondary" onClick={() => openEdit(payment)}>
+                            Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            loading={deletingId === payment.id}
+                            onClick={() => void handleDeleteManual(payment.id)}
+                          >
+                            Eliminar
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </AdminSection>
+      </section>
+
+      <Modal
+        open={editPayment !== null}
+        onClose={() => setEditPayment(null)}
+        title="Editar pago manual"
+        footer={
+          <>
+            <Button variant="secondary" fullWidth onClick={() => setEditPayment(null)}>
+              Cancelar
+            </Button>
+            <Button variant="gold" fullWidth loading={editSaving} onClick={() => void handleSaveEdit()}>
+              Guardar cambios
+            </Button>
+          </>
+        }
+      >
         <div className="flex flex-col gap-3">
-          <Select
-            id="payment-user"
-            label="Alumna"
-            value={selectedUserId}
-            onChange={(event) => setSelectedUserId(event.target.value)}
-            placeholder="Elige alumna"
-            options={students.map((student) => ({
-              value: student.id,
-              label: displayName(student),
-            }))}
-          />
           <Input
-            id="payment-month"
-            label="Mes (YYYY-MM)"
-            value={month}
-            onChange={(event) => setMonth(event.target.value)}
-          />
-          <Input
-            id="payment-amount"
+            id="edit-amount"
             label="Importe (céntimos)"
             type="number"
-            min={0}
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-            hint="Ej.: 4500 = 45,00 €"
+            min={CLASS_PRICE_CENTS}
+            step={CLASS_PRICE_CENTS}
+            value={editAmount}
+            onChange={(event) => setEditAmount(event.target.value)}
           />
-          <Button variant="gold" loading={saving} onClick={() => void handleCreatePayment()}>
-            Guardar cuota
-          </Button>
+          <Input
+            id="edit-date"
+            label="Fecha"
+            type="date"
+            value={editDate}
+            onChange={(event) => setEditDate(event.target.value)}
+          />
+          <Input
+            id="edit-notes"
+            label="Notas"
+            value={editNotes}
+            onChange={(event) => setEditNotes(event.target.value)}
+          />
         </div>
-      </Card>
-
-      {rows.length === 0 ? (
-        <EmptyState
-          title="Sin alumnas registradas"
-          description="Cuando haya alumnas podrás registrar sus cuotas."
-          icon={<CreditCardIcon width={24} height={24} />}
-        />
-      ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full min-w-[32rem] text-sm">
-            <thead>
-              <tr className="border-b border-line text-left text-xs tracking-wide text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Alumna</th>
-                <th className="px-4 py-3 font-semibold">Mes</th>
-                <th className="px-4 py-3 font-semibold">Importe</th>
-                <th className="px-4 py-3 font-semibold">Estado</th>
-                <th className="px-4 py-3 font-semibold">Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ student, payment }) => {
-                const key = payment?.id ?? student.id
-                return (
-                  <tr key={key} className="border-b border-line/70 last:border-0">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Avatar name={displayName(student)} size="sm" />
-                        <div>
-                          <p className="font-medium text-ink">{displayName(student)}</p>
-                          <p className="text-xs text-ink-muted">{student.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-ink-soft">
-                      {payment?.month ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 text-ink-soft">
-                      {payment ? formatEuros(payment.amount_cents) : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {payment ? (
-                        <Badge tone={statusTones[payment.status]}>{statusLabels[payment.status]}</Badge>
-                      ) : (
-                        <Badge tone="neutral">Sin cuota</Badge>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {payment && (
-                        <Button
-                          size="sm"
-                          variant={payment.status === 'paid' ? 'secondary' : 'gold'}
-                          onClick={() => void toggleStatus(payment)}
-                        >
-                          {payment.status === 'paid' ? 'Marcar pendiente' : 'Marcar pagado'}
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </Card>
-      )}
-    </section>
+      </Modal>
+    </>
   )
 }

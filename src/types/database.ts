@@ -18,6 +18,8 @@ export type ChatSenderRole = 'user' | 'admin'
 export type ReportPeriod = 'week' | 'month' | 'quarter' | 'semester' | 'year'
 export type ClassStatus = 'scheduled' | 'completed' | 'cancelled'
 export type BookingStatus = 'active' | 'cancelled'
+export type BookingSource = 'app' | 'manual'
+export type ManualResetScope = 'payments' | 'attendance' | 'bookings' | 'all'
 export type WorkoutDifficulty = 'facil' | 'media' | 'alta'
 export type RewardType = 'digital' | 'physical' | 'experience'
 export type UserRewardStatus = 'unlocked' | 'pending_delivery' | 'delivered'
@@ -56,6 +58,8 @@ export interface Database {
           subscription_plan: SubscriptionPlan | null
           subscription_status: SubscriptionStatus | null
           subscription_ends_at: string | null
+          is_manual: boolean
+          admin_notes: string | null
           created_at: string
           updated_at: string
         }
@@ -67,6 +71,8 @@ export interface Database {
           avatar_url?: string | null
           membership_tier?: MembershipTier
           approval_status?: ApprovalStatus
+          is_manual?: boolean
+          admin_notes?: string | null
         }
         Update: {
           name?: string
@@ -78,6 +84,8 @@ export interface Database {
           subscription_plan?: SubscriptionPlan | null
           subscription_status?: SubscriptionStatus | null
           subscription_ends_at?: string | null
+          is_manual?: boolean
+          admin_notes?: string | null
         }
         Relationships: []
       }
@@ -147,6 +155,7 @@ export interface Database {
           class_id: string
           user_id: string
           status: BookingStatus
+          source: BookingSource
           created_at: string
           updated_at: string
         }
@@ -155,8 +164,61 @@ export interface Database {
           class_id: string
           user_id: string
           status?: BookingStatus
+          source?: BookingSource
         }
-        Update: { status?: BookingStatus }
+        Update: { status?: BookingStatus; source?: BookingSource }
+        Relationships: []
+      }
+      manual_payments: {
+        Row: {
+          id: string
+          user_id: string
+          amount_cents: number
+          classes_credited: number
+          paid_at: string
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          amount_cents: number
+          classes_credited: number
+          paid_at: string
+          notes?: string | null
+          created_by?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          classes_credited?: number
+          paid_at?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      manual_attendance_records: {
+        Row: {
+          id: string
+          user_id: string
+          attendance_date: string
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          attendance_date: string
+          notes?: string | null
+          created_by?: string | null
+        }
+        Update: {
+          attendance_date?: string
+          notes?: string | null
+        }
         Relationships: []
       }
       attendance: {
@@ -450,9 +512,117 @@ export interface Database {
           last_name: string | null
           email: string
           booking_status: string
+          booking_source: string
+          is_manual: boolean
           booked_at: string
           attended: boolean
           attendance_confirmed_at: string | null
+        }[]
+      }
+      admin_assign_to_class: {
+        Args: { p_user_id: string; p_class_id: string }
+        Returns: Database['public']['Tables']['class_bookings']['Row']
+      }
+      admin_remove_from_class: {
+        Args: { p_booking_id: string }
+        Returns: Database['public']['Tables']['class_bookings']['Row']
+      }
+      admin_create_student: {
+        Args: {
+          p_name: string
+          p_last_name?: string | null
+          p_email?: string | null
+          p_notes?: string | null
+        }
+        Returns: Database['public']['Tables']['profiles']['Row']
+      }
+      admin_update_student: {
+        Args: {
+          p_user_id: string
+          p_name?: string | null
+          p_last_name?: string | null
+          p_email?: string | null
+          p_notes?: string | null
+        }
+        Returns: Database['public']['Tables']['profiles']['Row']
+      }
+      admin_register_manual_payment: {
+        Args: {
+          p_user_id: string
+          p_amount_cents: number
+          p_paid_at?: string | null
+          p_notes?: string | null
+        }
+        Returns: Database['public']['Tables']['manual_payments']['Row']
+      }
+      admin_update_manual_payment: {
+        Args: {
+          p_id: string
+          p_amount_cents: number
+          p_paid_at: string
+          p_notes?: string | null
+        }
+        Returns: Database['public']['Tables']['manual_payments']['Row']
+      }
+      admin_delete_manual_payment: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      admin_save_manual_attendance: {
+        Args: { p_date: string; p_user_ids: string[] }
+        Returns: number
+      }
+      admin_get_manual_attendance_for_date: {
+        Args: { p_date: string }
+        Returns: string[]
+      }
+      admin_delete_manual_attendance_date: {
+        Args: { p_date: string }
+        Returns: number
+      }
+      admin_reset_manual_data: {
+        Args: { p_scope: string }
+        Returns: Record<string, number>
+      }
+      admin_list_manual_balance_summary: {
+        Args: Record<string, never>
+        Returns: {
+          user_id: string
+          name: string
+          last_name: string | null
+          email: string
+          is_manual: boolean
+          paid_cents: number
+          manual_attendance_count: number
+          app_attendance_count: number
+          total_attended: number
+          balance_cents: number
+          available_classes: number
+          debt_classes: number
+        }[]
+      }
+      admin_list_manual_payments: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          user_id: string
+          user_name: string
+          amount_cents: number
+          classes_credited: number
+          paid_at: string
+          notes: string | null
+          created_at: string
+        }[]
+      }
+      admin_list_manual_attendance: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          user_id: string
+          user_name: string
+          attendance_date: string
+          notes: string | null
+          created_at: string
         }[]
       }
     }
@@ -486,3 +656,11 @@ export type ChatThread =
 export type ChatMessage = Tables<'chat_messages'>
 export type ClassParticipant =
   Database['public']['Functions']['admin_get_class_participants']['Returns'][number]
+export type ManualBalanceSummary =
+  Database['public']['Functions']['admin_list_manual_balance_summary']['Returns'][number]
+export type ManualPaymentRecord =
+  Database['public']['Functions']['admin_list_manual_payments']['Returns'][number]
+export type ManualAttendanceRecord =
+  Database['public']['Functions']['admin_list_manual_attendance']['Returns'][number]
+export type ManualPayment = Tables<'manual_payments'>
+export type ManualAttendance = Tables<'manual_attendance_records'>
