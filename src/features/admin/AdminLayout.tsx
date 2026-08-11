@@ -15,7 +15,7 @@ export function AdminLayout() {
   return (
     <div className="min-h-svh bg-bg-primary">
       <div className="mx-auto flex min-h-svh w-full max-w-5xl flex-col px-4 pt-[var(--safe-top)] pb-[calc(5.5rem+var(--safe-bottom))] sm:px-6 sm:pb-8">
-        <header className="mb-4 flex items-center justify-between gap-3 border-b border-line-gold/40 pb-3">
+        <header className="mb-4 flex items-center justify-between gap-3 border-b border-line-gold/40 pb-3 print:hidden">
           <div className="flex min-w-0 items-center gap-2">
             <IconButton
               label="Volver a la app"
@@ -38,19 +38,23 @@ export function AdminLayout() {
           </div>
         </header>
 
-        <AdminHero />
-        <AdminTabNav />
+        <div className="print:hidden">
+          <AdminHero />
+          <AdminTabNav />
+        </div>
 
-        <main className="mt-1 flex flex-1 flex-col">
+        <main className="mt-1 flex flex-1 flex-col print:mt-0">
           <Outlet />
         </main>
 
-        <footer className="mt-6 text-center text-[10px] tracking-[0.12em] text-ink-muted uppercase">
+        <footer className="mt-6 text-center text-[10px] tracking-[0.12em] text-ink-muted uppercase print:hidden">
           Coach Merche · Panel multidispositivo
         </footer>
       </div>
 
-      <AdminBottomNav />
+      <div className="print:hidden">
+        <AdminBottomNav />
+      </div>
     </div>
   )
 }

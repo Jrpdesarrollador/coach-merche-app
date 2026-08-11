@@ -39,7 +39,7 @@ export function AdminTabNav() {
 /** Barra inferior en móvil — 5 accesos principales. */
 export function AdminBottomNav() {
   const mobileItems = adminNavItems.filter((item) =>
-    ['/gestion', '/gestion/registrar', '/gestion/usuarios', '/gestion/clases', '/gestion/pagos'].includes(
+    ['/gestion', '/gestion/registrar', '/gestion/usuarios', '/gestion/historial', '/gestion/clases'].includes(
       item.to,
     ),
   )

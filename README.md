@@ -86,6 +86,8 @@ en español porque son visibles para las alumnas.
 | `/recompensas`      | Recompensas                          | Requiere sesión                   |
 | `/perfil`           | Perfil de la alumna                  | Requiere sesión                   |
 | `/gestion`          | Panel admin — resumen                | Requiere sesión **y** rol `admin` |
+| `/gestion/usuarios` | Alumnas, aprobaciones y stats expandibles | Admin                             |
+| `/gestion/historial`| Timeline pagos, cuotas, asistencias y reservas | Admin                        |
 | `/gestion/clases`   | Clases con contador de apuntadas     | Admin                             |
 | `/gestion/clases/:id` | Detalle: participantes y asistencia | Admin                             |
 | `/gestion/pagos`    | Control manual de cuotas             | Admin                             |
@@ -530,7 +532,7 @@ Colocar los archivos oficiales en `public/assets/brand/` cuando estén disponibl
 | 6 — Reservas y cancelación       | ✅ Completada (`34b1e40`)                                    |
 | 7 — Workouts                     | Pendiente                                                    |
 | 8 — Posts                        | Pendiente                                                    |
-| 9 — Admin móvil                  | ✅ Base completada — panel `/gestion/*`, pagos y avisos      |
+| 9 — Admin móvil                  | 🟡 Parcial — panel `/gestion/*`, registrar manual, historial timeline |
 | 10 — Asistencia                  | Pendiente                                                    |
 | 11 — Recompensas                 | Pendiente                                                    |
 | 12 — Storage                     | Pendiente                                                    |

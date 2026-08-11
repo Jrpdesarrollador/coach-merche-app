@@ -11,6 +11,7 @@ import {
   AdminReportsPage,
   AdminRegisterPage,
   AdminSettingsPage,
+  AdminHistoryPage,
   AdminUsersPage,
   AdminWorkoutsPage,
 } from '@/features/admin'
@@ -64,6 +65,7 @@ export function AppRouter() {
               <Route path="gestion" element={<AdminDashboardPage />} />
               <Route path="gestion/registrar" element={<AdminRegisterPage />} />
               <Route path="gestion/usuarios" element={<AdminUsersPage />} />
+              <Route path="gestion/historial" element={<AdminHistoryPage />} />
               <Route path="gestion/clases" element={<AdminClassesPage />} />
               <Route path="gestion/clases/:id" element={<AdminClassDetailPage />} />
               <Route path="gestion/entrenos" element={<AdminWorkoutsPage />} />

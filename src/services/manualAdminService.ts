@@ -140,6 +140,31 @@ async function deleteAttendanceDate(date: string): Promise<void> {
   if (error) throw serviceError(error)
 }
 
+async function updateAttendance(input: {
+  id: string
+  attendanceDate: string
+  notes?: string | null
+}): Promise<void> {
+  if (!isSupabaseConfigured) throw new ServiceError(SUPABASE_NOT_CONFIGURED_MESSAGE)
+
+  const { error } = await supabase
+    .from('manual_attendance_records')
+    .update({
+      attendance_date: input.attendanceDate,
+      notes: input.notes ?? null,
+    })
+    .eq('id', input.id)
+
+  if (error) throw serviceError(error)
+}
+
+async function deleteAttendance(id: string): Promise<void> {
+  if (!isSupabaseConfigured) throw new ServiceError(SUPABASE_NOT_CONFIGURED_MESSAGE)
+
+  const { error } = await supabase.from('manual_attendance_records').delete().eq('id', id)
+  if (error) throw serviceError(error)
+}
+
 async function listBalanceSummary(): Promise<ManualBalanceSummary[]> {
   if (!isSupabaseConfigured) return []
 
@@ -183,6 +208,8 @@ export const manualAdminService = {
   saveAttendance,
   getAttendanceForDate,
   deleteAttendanceDate,
+  updateAttendance,
+  deleteAttendance,
   listBalanceSummary,
   listManualPayments,
   listManualAttendance,

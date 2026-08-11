@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { UserIcon } from '@/components/icons'
+import { Link } from 'react-router-dom'
+import { ChevronRightIcon, UserIcon } from '@/components/icons'
 import {
   Avatar,
   Badge,
@@ -16,7 +17,7 @@ import {
 import { AdminSection } from '@/features/admin/components/AdminSection'
 import { useToast } from '@/hooks/useToast'
 import { adminUsersService, manualAdminService, toFriendlyMessage } from '@/services'
-import type { AdminUserWithStats, MembershipTier, SubscriptionPlan } from '@/types'
+import type { AdminUserWithStats, ManualBalanceSummary, MembershipTier, SubscriptionPlan } from '@/types'
 import { formatShortDate } from '@/utils/datetime'
 
 function displayName(user: AdminUserWithStats): string {
@@ -38,6 +39,17 @@ const planOptions = [
   { value: 'monthly', label: 'Mensual — 8,99 €/mes' },
   { value: 'yearly', label: 'Anual — 80 €/año' },
 ] as const
+
+function formatEuros(cents: number): string {
+  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(cents / 100)
+}
+
+function balanceLabel(summary: ManualBalanceSummary | undefined): string {
+  if (!summary) return '—'
+  if (summary.debt_classes > 0) return `${summary.debt_classes} cls. debidas`
+  if (summary.available_classes > 0) return `${summary.available_classes} cls. disponibles`
+  return 'Al día'
+}
 
 type TierAction = 'upgrade' | 'downgrade'
 
@@ -61,10 +73,17 @@ export function AdminUsersPage() {
   const [editEmail, setEditEmail] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const [editSaving, setEditSaving] = useState(false)
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
+  const [balanceSummary, setBalanceSummary] = useState<ManualBalanceSummary[]>([])
 
   const pending = useMemo(
     () => users.filter((user) => user.role === 'user' && user.approval_status === 'pending'),
     [users],
+  )
+
+  const balanceByUser = useMemo(
+    () => new Map(balanceSummary.map((row) => [row.user_id, row])),
+    [balanceSummary],
   )
 
   const active = useMemo(
@@ -73,8 +92,12 @@ export function AdminUsersPage() {
   )
 
   async function reload() {
-    const rows = await adminUsersService.listUsersWithStats()
+    const [rows, balances] = await Promise.all([
+      adminUsersService.listUsersWithStats(),
+      manualAdminService.listBalanceSummary(),
+    ])
     setUsers(rows)
+    setBalanceSummary(balances)
   }
 
   useEffect(() => {
@@ -327,55 +350,112 @@ export function AdminUsersPage() {
             {active.map((user) => {
               const tier = user.membership_tier as MembershipTier
               const isPro = tier === 'pro'
+              const isExpanded = expandedUserId === user.id
+              const balance = balanceByUser.get(user.id)
 
               return (
                 <li key={user.id}>
-                  <Card className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <Avatar name={displayName(user)} src={user.avatar_url} size="sm" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-ink">{displayName(user)}</p>
-                        <p className="truncate text-xs text-ink-muted">{user.email}</p>
-                        <p className="text-[11px] text-ink-muted">
-                          {user.bookings_count} reservas · {user.attendance_count} asistencias ·{' '}
-                          {formatShortDate(user.last_activity_at)}
-                        </p>
+                  <Card className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <button
+                        type="button"
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                        onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
+                        aria-expanded={isExpanded}
+                      >
+                        <Avatar name={displayName(user)} src={user.avatar_url} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-ink">{displayName(user)}</p>
+                          <p className="truncate text-xs text-ink-muted">{user.email}</p>
+                          <p className="text-[11px] text-ink-muted">
+                            {user.bookings_count} reservas · {user.attendance_count} asistencias ·{' '}
+                            {formatShortDate(user.last_activity_at)}
+                          </p>
+                        </div>
+                        <ChevronRightIcon
+                          width={18}
+                          height={18}
+                          className={`shrink-0 text-ink-muted transition-transform ${isExpanded ? '-rotate-90' : 'rotate-90'}`}
+                        />
+                      </button>
+
+                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                        <Badge tone={isPro ? 'gold' : 'neutral'}>{tierLabels[tier]}</Badge>
+                        <Button size="sm" variant="secondary" onClick={() => openEdit(user)}>
+                          Editar
+                        </Button>
+                        {isPro && user.subscription_plan && (
+                          <Badge tone="neutral">
+                            {user.subscription_plan === 'monthly' ? '8,99 €/mes' : '80 €/año'}
+                          </Badge>
+                        )}
+                        {!isPro ? (
+                          <Button
+                            variant="gold"
+                            size="sm"
+                            loading={acting === user.id}
+                            onClick={() => {
+                              setProPlan('monthly')
+                              setTierModal({ user, action: 'upgrade' })
+                            }}
+                          >
+                            Activar Pro
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            loading={acting === user.id}
+                            onClick={() => setTierModal({ user, action: 'downgrade' })}
+                          >
+                            Volver a Basic
+                          </Button>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                      <Badge tone={isPro ? 'gold' : 'neutral'}>{tierLabels[tier]}</Badge>
-                      <Button size="sm" variant="secondary" onClick={() => openEdit(user)}>
-                        Editar
-                      </Button>
-                      {isPro && user.subscription_plan && (
-                        <Badge tone="neutral">
-                          {user.subscription_plan === 'monthly' ? '8,99 €/mes' : '80 €/año'}
-                        </Badge>
-                      )}
-                      {!isPro ? (
-                        <Button
-                          variant="gold"
-                          size="sm"
-                          loading={acting === user.id}
-                          onClick={() => {
-                            setProPlan('monthly')
-                            setTierModal({ user, action: 'upgrade' })
-                          }}
-                        >
-                          Activar Pro
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          loading={acting === user.id}
-                          onClick={() => setTierModal({ user, action: 'downgrade' })}
-                        >
-                          Volver a Basic
-                        </Button>
-                      )}
-                    </div>
+                    {isExpanded && (
+                      <div className="rounded-[14px] border border-line bg-[#080b08] p-3">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                          <div className="rounded-xl border border-line/70 p-2.5 text-center">
+                            <p className="font-display text-lg font-black text-ink">
+                              {balance?.total_attended ?? user.attendance_count}
+                            </p>
+                            <p className="text-[10px] text-ink-muted">Asistencias</p>
+                          </div>
+                          <div className="rounded-xl border border-line/70 p-2.5 text-center">
+                            <p className="font-display text-lg font-black text-lime">
+                              {balance ? formatEuros(Number(balance.paid_cents)) : '—'}
+                            </p>
+                            <p className="text-[10px] text-ink-muted">Pagado</p>
+                          </div>
+                          <div className="rounded-xl border border-line/70 p-2.5 text-center">
+                            <p className="font-display text-lg font-black text-gold">
+                              {balanceLabel(balance)}
+                            </p>
+                            <p className="text-[10px] text-ink-muted">Saldo 7 €</p>
+                          </div>
+                          <div className="rounded-xl border border-line/70 p-2.5 text-center">
+                            <p className="font-display text-lg font-black text-ink">{user.bookings_count}</p>
+                            <p className="text-[10px] text-ink-muted">Reservas app</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Link
+                            to={`/gestion/historial?alumna=${user.id}`}
+                            className="inline-flex min-h-9 items-center rounded-xl border border-line-olive px-3 text-xs font-bold text-lime"
+                          >
+                            Ver historial →
+                          </Link>
+                          <Link
+                            to="/gestion/registrar"
+                            className="inline-flex min-h-9 items-center rounded-xl border border-line px-3 text-xs font-semibold text-ink-muted"
+                          >
+                            Registrar pago / asistencia
+                          </Link>
+                        </div>
+                      </div>
+                    )}
                   </Card>
                 </li>
               )
