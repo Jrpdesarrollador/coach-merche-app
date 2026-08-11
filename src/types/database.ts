@@ -10,6 +10,12 @@
  */
 
 export type UserRole = 'user' | 'admin'
+export type MembershipTier = 'basic' | 'pro'
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
+export type SubscriptionPlan = 'monthly' | 'yearly'
+export type SubscriptionStatus = 'active' | 'expired' | 'cancelled'
+export type ChatSenderRole = 'user' | 'admin'
+export type ReportPeriod = 'week' | 'month' | 'quarter' | 'semester' | 'year'
 export type ClassStatus = 'scheduled' | 'completed' | 'cancelled'
 export type BookingStatus = 'active' | 'cancelled'
 export type WorkoutDifficulty = 'facil' | 'media' | 'alta'
@@ -43,6 +49,13 @@ export interface Database {
           phone: string | null
           avatar_url: string | null
           role: UserRole
+          membership_tier: MembershipTier
+          approval_status: ApprovalStatus
+          approved_at: string | null
+          approved_by: string | null
+          subscription_plan: SubscriptionPlan | null
+          subscription_status: SubscriptionStatus | null
+          subscription_ends_at: string | null
           created_at: string
           updated_at: string
         }
@@ -52,12 +65,19 @@ export interface Database {
           last_name?: string | null
           phone?: string | null
           avatar_url?: string | null
+          membership_tier?: MembershipTier
+          approval_status?: ApprovalStatus
         }
         Update: {
           name?: string
           last_name?: string | null
           phone?: string | null
           avatar_url?: string | null
+          membership_tier?: MembershipTier
+          approval_status?: ApprovalStatus
+          subscription_plan?: SubscriptionPlan | null
+          subscription_status?: SubscriptionStatus | null
+          subscription_ends_at?: string | null
         }
         Relationships: []
       }
@@ -68,6 +88,8 @@ export interface Database {
           description: string | null
           poster_url: string
           video_url: string | null
+          video_path: string | null
+          requires_pro: boolean
           difficulty: WorkoutDifficulty | null
           duration_minutes: number | null
           category: string | null
@@ -81,6 +103,8 @@ export interface Database {
           description?: string | null
           poster_url: string
           video_url?: string | null
+          video_path?: string | null
+          requires_pro?: boolean
           difficulty?: WorkoutDifficulty | null
           duration_minutes?: number | null
           category?: string | null
@@ -249,6 +273,26 @@ export interface Database {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          id: string
+          user_id: string
+          sender_role: ChatSenderRole
+          body: string
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          sender_role: ChatSenderRole
+          body: string
+        }
+        Update: {
+          read_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           id: string
@@ -328,7 +372,74 @@ export interface Database {
           phone: string | null
           avatar_url: string | null
           role: string
+          membership_tier: string
+          approval_status: string
+          subscription_plan: string | null
+          subscription_status: string | null
+          subscription_ends_at: string | null
         }[]
+      }
+      admin_list_users_with_stats: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          name: string
+          last_name: string | null
+          email: string
+          phone: string | null
+          avatar_url: string | null
+          role: string
+          membership_tier: string
+          approval_status: string
+          approved_at: string | null
+          subscription_plan: string | null
+          subscription_status: string | null
+          subscription_ends_at: string | null
+          created_at: string
+          bookings_count: number
+          attendance_count: number
+          last_activity_at: string
+        }[]
+      }
+      admin_approve_user: {
+        Args: {
+          p_user_id: string
+          p_tier: string
+          p_subscription_plan?: string | null
+        }
+        Returns: Database['public']['Tables']['profiles']['Row']
+      }
+      admin_set_membership_tier: {
+        Args: {
+          p_user_id: string
+          p_tier: string
+          p_subscription_plan?: string | null
+        }
+        Returns: Database['public']['Tables']['profiles']['Row']
+      }
+      admin_reject_user: {
+        Args: { p_user_id: string }
+        Returns: Database['public']['Tables']['profiles']['Row']
+      }
+      admin_export_report: {
+        Args: { p_period: string; p_start_date?: string | null }
+        Returns: Record<string, unknown>
+      }
+      admin_list_chat_threads: {
+        Args: Record<string, never>
+        Returns: {
+          user_id: string
+          name: string
+          last_name: string | null
+          email: string
+          last_message: string
+          last_message_at: string
+          unread_count: number
+        }[]
+      }
+      is_pro_member: {
+        Args: { p_user_id?: string | null }
+        Returns: boolean
       }
       admin_get_class_participants: {
         Args: { p_class_id: string }
@@ -368,5 +479,10 @@ export type ClassAvailability = Database['public']['Views']['class_availability'
 export type Payment = Tables<'payments'>
 export type Notification = Tables<'notifications'>
 export type AdminProfile = Database['public']['Functions']['admin_list_profiles']['Returns'][number]
+export type AdminUserWithStats =
+  Database['public']['Functions']['admin_list_users_with_stats']['Returns'][number]
+export type ChatThread =
+  Database['public']['Functions']['admin_list_chat_threads']['Returns'][number]
+export type ChatMessage = Tables<'chat_messages'>
 export type ClassParticipant =
   Database['public']['Functions']['admin_get_class_participants']['Returns'][number]

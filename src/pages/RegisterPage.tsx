@@ -52,19 +52,19 @@ export function RegisterPage() {
     }
 
     if (needsEmailConfirmation) {
-      showToast('Revisa tu correo para confirmar tu cuenta.')
+      showToast('Revisa tu correo para confirmar tu cuenta. Merche validará tu acceso pronto.')
       navigate('/login', { replace: true })
       return
     }
 
-    showToast('¡Bienvenida! Ya formas parte del equipo 💚')
+    showToast('¡Cuenta creada! Merche validará tu acceso pronto.')
     navigate('/', { replace: true })
   }
 
   return (
     <AuthLayout
       title="Crea tu cuenta"
-      subtitle="Solo necesitamos tres datos para que empieces a entrenar con Merche."
+      subtitle="Solo necesitamos tres datos para que empieces. Merche validará tu acceso pronto."
       footer={
         <p>
           ¿Ya tienes cuenta?{' '}

@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/utils/cn'
-import { adminNavItems } from '../adminNav'
+import { adminNavGroups, adminNavItems } from '../adminNav'
 
 function tabClassName(isActive: boolean) {
   return cn(
@@ -11,45 +11,60 @@ function tabClassName(isActive: boolean) {
   )
 }
 
-/** Pestañas horizontales sticky (preview: `.tabs`). Visible en tablet/desktop. */
+/** Pestañas horizontales sticky con grupos (tablet/desktop). */
 export function AdminTabNav() {
   return (
     <nav
       aria-label="Secciones del panel"
-      className="sticky top-0 z-40 -mx-1 hidden gap-2 overflow-x-auto bg-linear-to-b from-bg-primary/97 via-bg-primary/88 to-transparent py-3 sm:flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="sticky top-0 z-40 -mx-1 hidden flex-col gap-2 bg-linear-to-b from-bg-primary/97 via-bg-primary/88 to-transparent py-3 sm:flex"
     >
-      {adminNavItems.map(({ to, label, end }) => (
-        <NavLink key={to} to={to} end={end} className={({ isActive }) => tabClassName(isActive)}>
-          {label}
-        </NavLink>
+      {adminNavGroups.map((group) => (
+        <div key={group.id} className="flex flex-col gap-1.5">
+          <p className="px-1 text-[10px] font-black tracking-[0.14em] text-ink-muted uppercase">
+            {group.label}
+          </p>
+          <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {group.items.map(({ to, label, end }) => (
+              <NavLink key={to} to={to} end={end} className={({ isActive }) => tabClassName(isActive)}>
+                {label}
+              </NavLink>
+            ))}
+          </div>
+        </div>
       ))}
     </nav>
   )
 }
 
-/** Barra inferior en móvil (preview: `.bottomNav` / `.bnav`). */
+/** Barra inferior en móvil — 5 accesos principales. */
 export function AdminBottomNav() {
+  const mobileItems = adminNavItems.filter((item) =>
+    ['/gestion', '/gestion/usuarios', '/gestion/clases', '/gestion/entrenos', '/gestion/chat'].includes(
+      item.to,
+    ),
+  )
+
   return (
     <nav
       aria-label="Navegación del panel"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg-primary/95 backdrop-blur-lg sm:hidden"
     >
-      <ul className="grid grid-cols-4 px-1 pt-2 pb-[calc(0.5rem+var(--safe-bottom))]">
-        {adminNavItems.map(({ to, label, icon, end }) => (
+      <ul className="grid grid-cols-5 px-1 pt-2 pb-[calc(0.5rem+var(--safe-bottom))]">
+        {mobileItems.map(({ to, label, icon, end }) => (
           <li key={to}>
             <NavLink
               to={to}
               end={end}
               className={({ isActive }) =>
                 cn(
-                  'flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-medium transition-colors',
+                  'flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl text-[9px] font-medium transition-colors',
                   isActive
                     ? 'bg-lime/10 font-extrabold text-lime'
                     : 'text-ink-muted hover:text-ink-soft',
                 )
               }
             >
-              <span className="text-lg leading-none" aria-hidden>
+              <span className="text-base leading-none" aria-hidden>
                 {icon}
               </span>
               <span>{label}</span>

@@ -39,6 +39,10 @@ export interface AuthContextValue {
    * Los permisos reales los decide RLS, nunca el cliente.
    */
   effectiveIsAdmin: boolean
+  /** Cuenta validada por Merche (admin siempre true). */
+  isApproved: boolean
+  /** Plan Pro activo (admin nunca es Pro como alumna). */
+  isPro: boolean
   setViewMode: (mode: ViewMode) => void
   loading: boolean
   signUp: (credentials: SignUpCredentials) => Promise<SignUpActionResult>

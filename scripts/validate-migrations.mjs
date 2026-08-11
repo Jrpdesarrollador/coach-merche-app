@@ -179,6 +179,11 @@ async function runSmokeTests(db) {
 
   // ---- Rol admin --------------------------------------------------------
   await db.query(`update public.profiles set role = 'admin' where id = '${MERCHE}'`)
+  await db.query(`
+    update public.profiles
+    set approval_status = 'approved', approved_at = now()
+    where id in ('${ANA}', '${LAURA}')
+  `)
   const admin = await db.query(`select role from public.profiles where id = '${MERCHE}'`)
   check(
     'El primer admin puede crearse desde el editor SQL',
@@ -486,6 +491,78 @@ async function runSmokeTests(db) {
 
   const reminderStub = await db.query(`select public.notify_class_reminders() as total`)
   check('notify_class_reminders stub responde 0', reminderStub.rows[0].total === 0)
+
+  // ---- Roles Basic/Pro y aprobación -------------------------------------
+  await signInAs()
+  await db.exec(`
+    insert into auth.users (id, email, raw_user_meta_data) values
+      ('88888888-8888-8888-8888-888888888888', 'nueva@example.com', '{"name":"Nueva"}');
+  `)
+  const pendingUser = await db.query(
+    `select approval_status from public.profiles where id = '88888888-8888-8888-8888-888888888888'`,
+  )
+  check(
+    'Nuevo registro queda en pending',
+    pendingUser.rows[0]?.approval_status === 'pending',
+  )
+
+  await signInAs(MERCHE)
+  await db.query(
+    `select public.admin_approve_user('88888888-8888-8888-8888-888888888888', 'pro', 'monthly')`,
+  )
+  const approvedPro = await db.query(
+    `select membership_tier, approval_status from public.profiles where id = '88888888-8888-8888-8888-888888888888'`,
+  )
+  check(
+    'Admin puede aprobar como Pro',
+    approvedPro.rows[0]?.membership_tier === 'pro' &&
+      approvedPro.rows[0]?.approval_status === 'approved',
+  )
+
+  const proCheck = await db.query(
+    `select public.is_pro_member('88888888-8888-8888-8888-888888888888') as is_pro`,
+  )
+  check('is_pro_member devuelve true para Pro aprobada', proCheck.rows[0]?.is_pro === true)
+
+  const basicCheck = await db.query(`select public.is_pro_member('${ANA}') as is_pro`)
+  check('Basic no es Pro', basicCheck.rows[0]?.is_pro === false)
+
+  const usersStats = await db.query(`select * from public.admin_list_users_with_stats()`)
+  check(
+    'Admin lista usuarias con stats',
+    usersStats.rows.length >= 4,
+    `total=${usersStats.rows.length}`,
+  )
+
+  // ---- Chat -------------------------------------------------------------
+  await signInAs(ANA)
+  await db.query(`
+    insert into public.chat_messages (user_id, sender_role, body)
+    values ('${ANA}', 'user', 'Hola Merche, tengo una duda')
+  `)
+  const anaChat = await db.query(
+    `select count(*)::int as total from public.chat_messages where user_id = '${ANA}'`,
+  )
+  check('Alumna ve su chat', anaChat.rows[0].total === 1)
+
+  await signInAs(LAURA)
+  const otherChat = await db.query(
+    `select count(*)::int as total from public.chat_messages where user_id = '${ANA}'`,
+  )
+  check('Alumna no ve chat de otra', otherChat.rows[0].total === 0)
+
+  await signInAs(MERCHE)
+  const threads = await db.query(`select * from public.admin_list_chat_threads()`)
+  check(
+    'Admin ve hilos de chat',
+    threads.rows.some((row) => row.user_id === ANA),
+  )
+
+  const report = await db.query(`select public.admin_export_report('month') as data`)
+  check(
+    'admin_export_report devuelve JSON',
+    report.rows[0]?.data?.period === 'month',
+  )
 
   let failed = 0
   for (const result of results) {

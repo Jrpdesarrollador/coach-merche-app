@@ -35,9 +35,9 @@ export function AdminDashboardPage() {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5">
         <AdminMetricCard
           icon="👥"
-          value={stats?.todayBookings ?? 0}
-          label="Reservas hoy"
-          tone="lime"
+          value={stats?.pendingApprovals ?? 0}
+          label="Pendientes"
+          tone="warning"
         />
         <AdminMetricCard
           icon="📌"
@@ -46,17 +46,38 @@ export function AdminDashboardPage() {
           tone="gold"
         />
         <AdminMetricCard
+          icon="📅"
+          value={stats?.todayBookings ?? 0}
+          label="Reservas hoy"
+          tone="lime"
+        />
+        <AdminMetricCard
           icon="🏋️"
           value={upcoming.length}
           label="Próximas clases"
         />
-        <AdminMetricCard
-          icon="💶"
-          value="—"
-          label="Total cobrado"
-          tone="gold"
-        />
       </div>
+
+      {(stats?.pendingApprovals ?? 0) > 0 && (
+        <AdminSection
+          title="Solicitudes de acceso"
+          description="Nuevas alumnas esperando tu validación."
+          actions={
+            <Link
+              to="/gestion/usuarios"
+              className="inline-flex min-h-11 items-center rounded-xl border border-line-olive bg-green-deep/80 px-3.5 text-sm font-bold text-lime"
+            >
+              Revisar
+            </Link>
+          }
+        >
+          <p className="text-sm text-ink-muted">
+            Tienes {stats?.pendingApprovals} solicitud
+            {(stats?.pendingApprovals ?? 0) !== 1 ? 'es' : ''} pendiente
+            {(stats?.pendingApprovals ?? 0) !== 1 ? 's' : ''} de aprobación.
+          </p>
+        </AdminSection>
+      )}
 
       <AdminSection
         title="Próximas clases"

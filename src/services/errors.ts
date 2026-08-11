@@ -87,6 +87,11 @@ const messagesByFragment: [string, string][] = [
   ['class_full', 'Lo sentimos, la clase está completa.'],
   ['already_booked', 'Ya estás apuntada a esta clase.'],
   ['booking_not_found', 'No tienes reserva activa en esta clase.'],
+
+  // Membresía admin
+  ['invalid_tier', 'El plan seleccionado no es válido.'],
+  ['subscription_plan_required', 'Elige un plan mensual o anual para Pro.'],
+  ['user_not_found', 'No encontramos a esa alumna.'],
 ]
 
 function asSupabaseError(error: unknown): SupabaseErrorLike {

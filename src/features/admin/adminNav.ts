@@ -1,9 +1,34 @@
-/** Rutas del panel de gestión (Merche). Estilo alineado al preview `Control de Clases`. */
-export const adminNavItems = [
-  { to: '/gestion', label: 'Resumen', icon: '⌂', end: true as const },
-  { to: '/gestion/clases', label: 'Clases', icon: '▦', end: false as const },
-  { to: '/gestion/pagos', label: 'Pagos', icon: '€', end: false as const },
-  { to: '/gestion/notificaciones', label: 'Avisos', icon: '🔔', end: false as const },
+/** Rutas del panel de gestión — agrupadas por área. */
+export const adminNavGroups = [
+  {
+    id: 'admin',
+    label: 'Admin',
+    items: [
+      { to: '/gestion', label: 'Resumen', icon: '⌂', end: true as const },
+      { to: '/gestion/usuarios', label: 'Usuarios', icon: '👥', end: false as const },
+      { to: '/gestion/pagos', label: 'Pagos', icon: '€', end: false as const },
+      { to: '/gestion/informes', label: 'Informes', icon: '📊', end: false as const },
+    ],
+  },
+  {
+    id: 'contenido',
+    label: 'Contenido',
+    items: [
+      { to: '/gestion/clases', label: 'Clases', icon: '▦', end: false as const },
+      { to: '/gestion/entrenos', label: 'Entrenos', icon: '🏋️', end: false as const },
+      { to: '/gestion/publicaciones', label: 'Posts', icon: '📝', end: false as const },
+    ],
+  },
+  {
+    id: 'comunicacion',
+    label: 'Comunicación',
+    items: [
+      { to: '/gestion/notificaciones', label: 'Avisos', icon: '🔔', end: false as const },
+      { to: '/gestion/chat', label: 'Chat', icon: '💬', end: false as const },
+    ],
+  },
 ] as const
 
-export type AdminNavItem = (typeof adminNavItems)[number]
+export type AdminNavItem = (typeof adminNavGroups)[number]['items'][number]
+
+export const adminNavItems: AdminNavItem[] = adminNavGroups.flatMap((group) => [...group.items])

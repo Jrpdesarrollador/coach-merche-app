@@ -9,6 +9,7 @@ import {
   type AuthCredentials,
   type SignUpCredentials,
 } from './authContext'
+import { isProfileApproved, isProfilePro } from './membership'
 import {
   defaultViewMode,
   isEmailInViewModeAllowlist,
@@ -170,6 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = profile?.role === 'admin'
   const canSwitchViewMode = isAdmin && isEmailInViewModeAllowlist(user?.email)
   const effectiveIsAdmin = isAdmin && viewMode === 'admin'
+  const isApproved = isProfileApproved(profile)
+  const isPro = isProfilePro(profile)
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -180,6 +183,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       viewMode,
       canSwitchViewMode,
       effectiveIsAdmin,
+      isApproved,
+      isPro,
       setViewMode,
       loading,
       signUp,
@@ -197,6 +202,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       viewMode,
       canSwitchViewMode,
       effectiveIsAdmin,
+      isApproved,
+      isPro,
       setViewMode,
       loading,
       signUp,

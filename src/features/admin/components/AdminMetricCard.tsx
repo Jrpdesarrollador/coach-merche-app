@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/utils/cn'
 
-type AdminMetricTone = 'default' | 'lime' | 'gold' | 'danger'
+type AdminMetricTone = 'default' | 'lime' | 'gold' | 'danger' | 'warning'
 
 interface AdminMetricCardProps {
   icon: ReactNode
@@ -15,6 +15,7 @@ const toneClasses: Record<AdminMetricTone, string> = {
   lime: 'text-lime',
   gold: 'text-gold',
   danger: 'text-danger',
+  warning: 'text-warning',
 }
 
 /** Tarjeta de métrica del dashboard admin (preview: `.metric`). */

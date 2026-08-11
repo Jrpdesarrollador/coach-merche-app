@@ -1,13 +1,19 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import {
+  AdminChatPage,
   AdminClassDetailPage,
   AdminClassesPage,
   AdminDashboardPage,
   AdminLayout,
   AdminNotificationsPage,
   AdminPaymentsPage,
+  AdminPostsPage,
+  AdminReportsPage,
+  AdminUsersPage,
+  AdminWorkoutsPage,
 } from '@/features/admin'
 import { AppShell } from '@/layouts/AppShell'
+import { ChatPage } from '@/pages/ChatPage'
 import { ClassesPage } from '@/pages/ClassesPage'
 import { ClassDetailPage } from '@/pages/ClassDetailPage'
 import { DesignSystemPage } from '@/pages/DesignSystemPage'
@@ -46,6 +52,7 @@ export function AppRouter() {
             <Route path="entrenamientos" element={<WorkoutsPage />} />
             <Route path="recompensas" element={<RewardsPage />} />
             <Route path="perfil" element={<ProfilePage />} />
+            <Route path="chat" element={<ChatPage />} />
             <Route path="design" element={<DesignSystemPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
@@ -53,10 +60,15 @@ export function AppRouter() {
           <Route element={<AdminRoute />}>
             <Route element={<AdminLayout />}>
               <Route path="gestion" element={<AdminDashboardPage />} />
+              <Route path="gestion/usuarios" element={<AdminUsersPage />} />
               <Route path="gestion/clases" element={<AdminClassesPage />} />
               <Route path="gestion/clases/:id" element={<AdminClassDetailPage />} />
+              <Route path="gestion/entrenos" element={<AdminWorkoutsPage />} />
+              <Route path="gestion/publicaciones" element={<AdminPostsPage />} />
               <Route path="gestion/pagos" element={<AdminPaymentsPage />} />
               <Route path="gestion/notificaciones" element={<AdminNotificationsPage />} />
+              <Route path="gestion/chat" element={<AdminChatPage />} />
+              <Route path="gestion/informes" element={<AdminReportsPage />} />
             </Route>
           </Route>
         </Route>

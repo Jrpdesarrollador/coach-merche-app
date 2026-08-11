@@ -1,3 +1,4 @@
+import { adminUsersService } from './adminUsersService'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 import type { AdminProfile, ClassParticipant } from '@/types'
 import { classesService, type ClassWithWorkout } from './classesService'
@@ -8,6 +9,7 @@ export interface AdminDashboardStats {
   upcomingClasses: ClassWithWorkout[]
   todayBookings: number
   pendingPayments: number
+  pendingApprovals: number
 }
 
 async function listProfiles(): Promise<AdminProfile[]> {
@@ -71,13 +73,14 @@ async function listUpcomingClasses(limit = 5): Promise<ClassWithWorkout[]> {
 }
 
 async function getDashboardStats(): Promise<AdminDashboardStats> {
-  const [upcomingClasses, todayBookings, pendingPayments] = await Promise.all([
+  const [upcomingClasses, todayBookings, pendingPayments, pendingApprovals] = await Promise.all([
     listUpcomingClasses(),
     countTodayBookings(),
     paymentsService.countPending(),
+    adminUsersService.countPendingApprovals(),
   ])
 
-  return { upcomingClasses, todayBookings, pendingPayments }
+  return { upcomingClasses, todayBookings, pendingPayments, pendingApprovals }
 }
 
 export const adminService = {

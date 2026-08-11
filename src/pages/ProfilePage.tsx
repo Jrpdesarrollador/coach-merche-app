@@ -22,7 +22,7 @@ const EDIT_FORM_ID = 'profile-edit-form'
 
 export function ProfilePage() {
   const navigate = useNavigate()
-  const { user, profile, effectiveIsAdmin, signOut, refreshProfile } = useAuth()
+  const { user, profile, effectiveIsAdmin, isPro, signOut, refreshProfile } = useAuth()
   const { showToast } = useToast()
 
   const [editOpen, setEditOpen] = useState(false)
@@ -92,10 +92,20 @@ export function ProfilePage() {
               <p className="text-sm break-all text-ink-muted">{user.email}</p>
             )}
             {effectiveIsAdmin && <Badge tone="gold">Entrenadora</Badge>}
+            {!effectiveIsAdmin && profile && (
+              <Badge tone={isPro ? 'gold' : 'neutral'}>
+                {isPro ? 'Plan Pro' : 'Plan Basic'}
+              </Badge>
+            )}
           </div>
           <Button variant="secondary" fullWidth onClick={openEditor}>
             Editar perfil
           </Button>
+          {!effectiveIsAdmin && (
+            <Button variant="gold" fullWidth onClick={() => navigate('/chat')}>
+              Contactar con Merche
+            </Button>
+          )}
         </Card>
 
         <ViewModeSwitcher />
