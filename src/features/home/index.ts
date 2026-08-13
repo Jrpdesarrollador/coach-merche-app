@@ -1,3 +1,4 @@
+export { HomeHeroBanner } from './HomeHeroBanner'
 export {
   ClassBookingStatus,
   ClassCard,

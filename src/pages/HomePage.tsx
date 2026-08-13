@@ -8,6 +8,7 @@ import {
   ClassBookingStatus,
   ClassCard,
   ClassCardSkeleton,
+  HomeHeroBanner,
   PostCard,
   PostCardSkeleton,
   ProgressCard,
@@ -33,8 +34,9 @@ function timeOfDayGreeting(): string {
 }
 
 function buildGreeting(name: string, isAdmin: boolean): string {
-  if (isAdmin) return `${timeOfDayGreeting()}, ${name || 'Merche'} 👑`
-  return name ? `Hola, ${name} 👋` : 'Hola 👋'
+  const salutation = timeOfDayGreeting()
+  const who = name || 'Merche'
+  return isAdmin ? `${salutation}, ${who} 👑` : `${salutation}, ${who}`
 }
 
 export function HomePage() {
@@ -67,7 +69,11 @@ export function HomePage() {
     <>
       <TopBar action={<NotificationBell />} />
 
-      <section className="flex flex-col gap-5 pt-0.5">
+      <div className="-mx-4">
+        <HomeHeroBanner />
+      </div>
+
+      <section className="flex flex-col gap-5 pt-4">
         <div>
           <h1 className="font-display text-3xl text-ink">{greeting}</h1>
           <p className="mt-1 text-sm text-ink-muted">Entrena tu mejor versión</p>
