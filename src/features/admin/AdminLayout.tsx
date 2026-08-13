@@ -1,5 +1,5 @@
 import { Outlet, useNavigate } from 'react-router-dom'
-import { Logo } from '@/components/brand'
+import { DeveloperCredit, Logo } from '@/components/brand'
 import { ChevronLeftIcon } from '@/components/icons'
 import { IconButton } from '@/components/ui/IconButton'
 import { AdminBottomNav, AdminTabNav } from './components/AdminTabNav'
@@ -48,9 +48,7 @@ export function AdminLayout() {
           </div>
         </main>
 
-        <footer className="shrink-0 pb-2 text-center text-[10px] tracking-[0.12em] text-ink-muted uppercase print:hidden sm:pb-4">
-          Coach Merche · Panel multidispositivo
-        </footer>
+        <DeveloperCredit className="shrink-0 pb-[calc(0.25rem+var(--safe-bottom))] sm:pb-4" />
       </div>
 
       <div className="print:hidden">

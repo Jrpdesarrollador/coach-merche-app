@@ -1,4 +1,4 @@
-import { Logo } from '@/components/brand'
+import { DeveloperCredit, Logo } from '@/components/brand'
 import { Button, Card, CardLabel } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -6,7 +6,7 @@ export function PendingApprovalPage() {
   const { profile, signOut } = useAuth()
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center px-6 py-12">
+    <div className="flex min-h-svh flex-col items-center justify-center px-6 py-12 pb-[calc(2.5rem+var(--safe-bottom))]">
       <Logo size="lg" decorative className="mb-5" />
       <Card className="w-full max-w-md text-center">
         <CardLabel>Validación pendiente</CardLabel>
@@ -29,6 +29,7 @@ export function PendingApprovalPage() {
           Cerrar sesión
         </Button>
       </Card>
+      <DeveloperCredit subtle className="mt-8" />
     </div>
   )
 }

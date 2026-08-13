@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Logo } from '@/components/brand'
+import { DeveloperCredit, Logo } from '@/components/brand'
 import { Card } from '@/components/ui'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { SupabaseConfigNotice } from './SupabaseConfigNotice'
@@ -46,6 +46,8 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
             {footer}
           </footer>
         )}
+
+        <DeveloperCredit subtle className="pt-2" />
       </div>
     </main>
   )
