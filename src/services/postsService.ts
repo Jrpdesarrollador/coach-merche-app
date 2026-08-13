@@ -45,6 +45,20 @@ async function getLatestPublished(): Promise<Post | null> {
   return data
 }
 
+async function getPublishedById(id: string): Promise<Post | null> {
+  if (!isSupabaseConfigured) return null
+
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('id', id)
+    .eq('published', true)
+    .maybeSingle()
+
+  if (error) throw serviceError(error)
+  return data
+}
+
 async function listPublished(): Promise<Post[]> {
   if (!isSupabaseConfigured) return []
 
@@ -178,6 +192,7 @@ async function deletePost(post: Post): Promise<void> {
 
 export const postsService = {
   getLatestPublished,
+  getPublishedById,
   listPublished,
   listAll,
   createPost,

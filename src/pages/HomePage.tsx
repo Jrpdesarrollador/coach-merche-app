@@ -167,6 +167,28 @@ export function HomePage() {
                 />
               </Card>
             )}
+
+            <Card
+              className="flex cursor-pointer items-center justify-between gap-3 transition-[border-color,transform] duration-150 hover:border-line-lime active:scale-[0.995]"
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate('/informacion')}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  navigate('/informacion')
+                }
+              }}
+            >
+              <div>
+                <p className="text-[0.7rem] font-semibold tracking-[0.16em] text-ink-muted uppercase">
+                  Ayuda
+                </p>
+                <p className="mt-1 font-display text-base text-ink">Información y contacto</p>
+                <p className="mt-1 text-sm text-ink-muted">WhatsApp, FAQ y más</p>
+              </div>
+              <span className="text-gold">→</span>
+            </Card>
           </>
         )}
       </section>

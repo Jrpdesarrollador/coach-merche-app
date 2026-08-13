@@ -23,8 +23,10 @@ import { ClassDetailPage } from '@/pages/ClassDetailPage'
 import { DesignSystemPage } from '@/pages/DesignSystemPage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { HomePage } from '@/pages/HomePage'
+import { InfoPage } from '@/pages/InfoPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { PostDetailPage } from '@/pages/PostDetailPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
@@ -51,6 +53,8 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route index element={<HomePage />} />
+            <Route path="novedades/:id" element={<PostDetailPage />} />
+            <Route path="informacion" element={<InfoPage />} />
             <Route path="clases" element={<ClassesPage />} />
             <Route path="clases/:classId" element={<ClassDetailPage />} />
             <Route path="entrenamientos" element={<WorkoutsPage />} />

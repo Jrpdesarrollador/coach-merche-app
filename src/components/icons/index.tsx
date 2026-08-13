@@ -165,3 +165,31 @@ export function UsersIcon(props: IconProps) {
     </svg>
   )
 }
+
+export function MailIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="6" width="18" height="13" rx="2" />
+      <path d="m3 8 9 6 9-6" />
+    </svg>
+  )
+}
+
+export function WhatsAppIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 3a8.5 8.5 0 0 0-7.3 12.8L3.5 20.5l4.8-1.1A8.5 8.5 0 1 0 12 3z" />
+      <path d="M9.2 9.8c.2-.5.4-.5.7-.5h.6c.2 0 .4 0 .5.3l.8 1.9c.1.2 0 .4-.1.5l-.5.6c-.1.2-.1.3 0 .5.4.8 1.1 1.5 1.9 1.9.2.1.3.1.5 0l.6-.5c.2-.1.3-.1.5.1l1.9.8c.2.1.3.3.3.5v.6c0 .3-.1.5-.5.7-.4.2-1 .4-1.7.4-1.2 0-2.6-.5-4-1.9-1.4-1.4-1.9-2.8-1.9-4 0-.7.2-1.3.4-1.7z" />
+    </svg>
+  )
+}
+
+export function InfoIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 10.5V16" />
+      <path d="M12 8h.01" />
+    </svg>
+  )
+}

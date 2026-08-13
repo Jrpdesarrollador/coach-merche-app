@@ -127,6 +127,18 @@ export function ProfilePage() {
 
         {!effectiveIsAdmin && (
           <Card className="flex flex-col gap-2">
+            <CardLabel>Información y ayuda</CardLabel>
+            <p className="text-sm leading-relaxed text-ink-muted">
+              Contacto con Merche, Instagram y respuestas a las dudas más habituales.
+            </p>
+            <Button variant="secondary" fullWidth onClick={() => navigate('/informacion')}>
+              Información y ayuda
+            </Button>
+          </Card>
+        )}
+
+        {!effectiveIsAdmin && (
+          <Card className="flex flex-col gap-2">
             <CardLabel>Tu actividad</CardLabel>
             <p className="text-sm leading-relaxed text-ink-muted">
               Consulta tus logros y recompensas en la pestaña Logros del menú inferior.

@@ -224,14 +224,14 @@ export function AdminPostsPage() {
                 />
               )}
               {previewUrl && previewMediaType === 'image' && (
-                <PosterImage src={previewUrl} alt="Vista previa" ratio="4/5" fit="cover" className="w-full" />
+                <PosterImage src={previewUrl} alt="Vista previa" ratio="auto" fit="contain" className="w-full" />
               )}
               {!previewUrl && existingImageUrl && (
                 <PosterImage
                   src={existingImageUrl}
                   alt={editingPost?.title ?? 'Imagen actual'}
-                  ratio="4/5"
-                  fit="cover"
+                  ratio="auto"
+                  fit="contain"
                   className="w-full"
                 />
               )}
