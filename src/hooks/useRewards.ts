@@ -41,7 +41,6 @@ export function useRewards(userId: string | undefined): UseRewardsResult {
       setError(null)
 
       try {
-        await rewardsService.syncUserRewards(userId!)
         const data = await rewardsService.getOverview(userId!)
         if (cancelled) return
         setOverview(data)

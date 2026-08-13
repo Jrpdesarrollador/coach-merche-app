@@ -28,7 +28,8 @@ export function ProgressCard({
   const countLabel =
     workoutCount === 1 ? '1 entrenamiento' : `${workoutCount} entrenamientos`
 
-  let helperText = 'Tu progreso se activará cuando Merche confirme tu primera asistencia.'
+  let helperText =
+    'Apúntate a clase: una hora después del inicio contará como entrenamiento confirmado.'
   if (workoutCount > 0 && nextReward) {
     helperText = `${remaining} para desbloquear ${rewardLabel(nextReward)}`
   } else if (workoutCount > 0 && !nextReward && highestReward) {

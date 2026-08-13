@@ -445,6 +445,10 @@ export interface Database {
         Args: { p_user_id: string }
         Returns: UnlockedReward[]
       }
+      process_auto_attendance: {
+        Args: { p_user_id?: string }
+        Returns: number
+      }
       confirm_class_attendance: {
         Args: { p_class_id: string; p_attendee_ids: string[] }
         Returns: UnlockedReward[]

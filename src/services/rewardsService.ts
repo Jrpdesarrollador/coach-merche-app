@@ -54,6 +54,19 @@ async function getWorkoutCount(userId: string): Promise<number> {
   return data ?? 0
 }
 
+/** Confirma asistencia automática de reservas pasadas (+1 h) y sincroniza logros. */
+async function prepareUserRewards(userId: string): Promise<void> {
+  if (!isSupabaseConfigured) return
+
+  const { error: autoError } = await supabase.rpc('process_auto_attendance', {
+    p_user_id: userId,
+  })
+  if (autoError) throw serviceError(autoError)
+
+  const { error: syncError } = await supabase.rpc('sync_user_rewards', { p_user_id: userId })
+  if (syncError) throw serviceError(syncError)
+}
+
 async function getActiveRewards(): Promise<Reward[]> {
   const { data, error } = await supabase
     .from('rewards')
@@ -123,6 +136,8 @@ async function getUserRewards(userId: string): Promise<UserReward[]> {
 async function getProgress(userId: string): Promise<RewardProgress | null> {
   if (!isSupabaseConfigured) return null
 
+  await prepareUserRewards(userId)
+
   const [workoutCount, rewards] = await Promise.all([
     getWorkoutCount(userId),
     getActiveRewards(),
@@ -139,6 +154,8 @@ async function getProgress(userId: string): Promise<RewardProgress | null> {
 async function getOverview(userId: string): Promise<RewardsOverview | null> {
   if (!isSupabaseConfigured) return null
 
+  await prepareUserRewards(userId)
+
   const [workoutCount, rewards, userRewards] = await Promise.all([
     getWorkoutCount(userId),
     getActiveRewards(),
@@ -150,10 +167,7 @@ async function getOverview(userId: string): Promise<RewardsOverview | null> {
 
 /** Sincroniza recompensas desbloqueadas según asistencias confirmadas. */
 async function syncUserRewards(userId: string): Promise<void> {
-  if (!isSupabaseConfigured) return
-
-  const { error } = await supabase.rpc('sync_user_rewards', { p_user_id: userId })
-  if (error) throw serviceError(error)
+  await prepareUserRewards(userId)
 }
 
 async function listPendingDeliveries(): Promise<PendingRewardDelivery[]> {

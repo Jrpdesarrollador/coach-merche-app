@@ -49,7 +49,8 @@ export function RewardsPage() {
           <div>
             <h2 className="font-display text-lg text-ink">Todas las recompensas</h2>
             <p className="mt-1 text-sm text-ink-muted">
-              Cada asistencia confirmada suma. Sin ranking — esto es solo para ti.
+              Cada clase a la que te apuntes suma automáticamente una hora después del inicio.
+              Sin ranking — esto es solo para ti.
             </p>
           </div>
 

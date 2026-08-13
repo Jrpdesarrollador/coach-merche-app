@@ -385,7 +385,90 @@ async function runSmokeTests(db) {
     JSON.stringify(repeat.rows),
   )
 
+  // ---- Auto-confirmación de asistencia (+1 h) ---------------------------
+  await signInAs()
+  await db.exec(`
+    insert into public.classes (id, workout_id, date, start_time, location, capacity, status)
+    values ('88888888-8888-8888-8888-888888888888', '${WORKOUT}', (current_date - 2), '19:00', 'Box Coach Merche', 10, 'scheduled');
+
+    insert into public.class_bookings (class_id, user_id, status)
+    values ('88888888-8888-8888-8888-888888888888', '${ANA}', 'active');
+  `)
+
+  await signInAs(ANA)
+  const autoBefore = await db.query(`select public.workout_count('${ANA}') as total`)
+  check('Ana empieza sin entrenamientos auto-confirmados', autoBefore.rows[0].total === 0)
+
+  const autoConfirmed = await db.query(
+    `select public.process_auto_attendance('${ANA}') as total`,
+  )
+  check(
+    'process_auto_attendance confirma reservas pasadas (+1 h)',
+    autoConfirmed.rows[0].total === 1,
+    JSON.stringify(autoConfirmed.rows[0]),
+  )
+
+  const autoAfter = await db.query(`select public.workout_count('${ANA}') as total`)
+  check('El contador refleja la asistencia auto-confirmada', autoAfter.rows[0].total === 1)
+
+  const autoRewardRows = await db.query(`
+    select r.name
+    from public.user_rewards ur
+    join public.rewards r on r.id = ur.reward_id
+    where ur.user_id = '${ANA}'
+  `)
+  check(
+    'Auto-confirmación desbloquea recompensas',
+    autoRewardRows.rows.some((row) => row.name === 'Primer paso'),
+    JSON.stringify(autoRewardRows.rows),
+  )
+
+  const autoRepeat = await db.query(`select public.process_auto_attendance('${ANA}') as total`)
+  check(
+    'process_auto_attendance es idempotente',
+    autoRepeat.rows[0].total === 0,
+    JSON.stringify(autoRepeat.rows[0]),
+  )
+
+  const futureClassDate2 = await nextTueOrThuDate(db, 2)
+  await signInAs()
+  await db.exec(`
+    insert into public.classes (id, workout_id, date, start_time, location, capacity, status)
+    values ('99999999-9999-9999-9999-999999999999', '${WORKOUT}', '${futureClassDate2}', '19:00', 'Box Coach Merche', 10, 'scheduled');
+  `)
+  await signInAs(ANA)
+  await db.query(`select public.book_class('99999999-9999-9999-9999-999999999999')`)
+  const futureAuto = await db.query(`select public.process_auto_attendance('${ANA}') as total`)
+  check(
+    'No auto-confirma clases futuras',
+    futureAuto.rows[0].total === 0,
+    JSON.stringify(futureAuto.rows[0]),
+  )
+
+  await signInAs()
+  await db.exec(`
+    insert into public.classes (id, workout_id, date, start_time, location, capacity, status)
+    values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '${WORKOUT}', (current_date - 3), '10:00', 'Box Coach Merche', 10, 'scheduled');
+
+    insert into public.class_bookings (class_id, user_id, status)
+    values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '${LAURA}', 'active');
+  `)
+  await signInAs(MERCHE)
+  await db.query(
+    `select * from public.confirm_class_attendance('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '{}'::uuid[])`,
+  )
+  await signInAs(LAURA)
+  const adminOverride = await db.query(
+    `select public.process_auto_attendance('${LAURA}') as total`,
+  )
+  check(
+    'No auto-confirma si admin ya registró asistencia manual',
+    adminOverride.rows[0].total === 0,
+    JSON.stringify(adminOverride.rows[0]),
+  )
+
   // ---- Recompensa física: pendiente de entrega --------------------------
+  await signInAs(MERCHE)
   await db.query(`
     insert into public.attendance (class_id, user_id, attended, confirmed_by, confirmed_at)
     select c.id, '${LAURA}', true, '${MERCHE}', now()
