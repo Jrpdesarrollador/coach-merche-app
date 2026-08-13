@@ -1,0 +1,96 @@
+.home-hero-banner {
+  --home-hero-neon: #aed419;
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  min-height: clamp(180px, 56vw, 320px);
+}
+
+.home-hero-banner__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 128%;
+  object-fit: cover;
+  object-position: center 58%;
+}
+
+.home-hero-banner__neon {
+  clip-path: inset(0 55% 0 0);
+  pointer-events: none;
+  will-change: filter, opacity;
+  animation: neon-flicker 3.2s ease-in-out infinite;
+  filter:
+    brightness(1)
+    drop-shadow(0 0 6px rgba(174, 212, 25, 0.5))
+    drop-shadow(0 0 16px rgba(174, 212, 25, 0.28));
+}
+
+@keyframes neon-flicker {
+  0%,
+  100% {
+    filter:
+      brightness(1)
+      drop-shadow(0 0 6px rgba(174, 212, 25, 0.5))
+      drop-shadow(0 0 16px rgba(174, 212, 25, 0.28));
+    opacity: 1;
+  }
+
+  18%,
+  22% {
+    filter:
+      brightness(0.94)
+      drop-shadow(0 0 3px rgba(174, 212, 25, 0.32))
+      drop-shadow(0 0 8px rgba(174, 212, 25, 0.14));
+    opacity: 0.97;
+  }
+
+  50% {
+    filter:
+      brightness(1.12)
+      drop-shadow(0 0 10px rgba(174, 212, 25, 0.72))
+      drop-shadow(0 0 26px rgba(174, 212, 25, 0.42));
+    opacity: 1;
+  }
+
+  54%,
+  56% {
+    filter:
+      brightness(0.92)
+      drop-shadow(0 0 2px rgba(174, 212, 25, 0.25))
+      drop-shadow(0 0 6px rgba(174, 212, 25, 0.1));
+    opacity: 0.95;
+  }
+
+  78% {
+    filter:
+      brightness(1.08)
+      drop-shadow(0 0 8px rgba(174, 212, 25, 0.62))
+      drop-shadow(0 0 20px rgba(174, 212, 25, 0.34));
+    opacity: 1;
+  }
+}
+
+@media (min-width: 640px) {
+  .home-hero-banner__img {
+    object-position: center 56%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-hero-banner {
+    min-height: clamp(220px, 42vw, 360px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-banner__neon {
+    animation: none;
+    filter:
+      brightness(1.04)
+      drop-shadow(0 0 6px rgba(174, 212, 25, 0.45))
+      drop-shadow(0 0 14px rgba(174, 212, 25, 0.22));
+    opacity: 1;
+  }
+}
