@@ -1,8 +1,8 @@
 /**
- * Genera iconos PWA desde el logo oficial.
+ * Genera iconos PWA desde el logo oficial verde.
  * Uso: node scripts/generate-pwa-icons.mjs
  */
-import { mkdir, access } from 'node:fs/promises'
+import { mkdir, access, unlink } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
@@ -12,10 +12,17 @@ const logoPath = path.join(rootDir, 'public/assets/brand/logo-coach-merche.png')
 const iconsDir = path.join(rootDir, 'public/assets/icons')
 
 const sizes = [
-  { name: 'icon-192.png', size: 192 },
-  { name: 'icon-512.png', size: 512 },
-  { name: 'apple-touch-icon.png', size: 180 },
-  { name: 'icon-maskable-512.png', size: 512, maskable: true },
+  { name: 'pwa-icon-192-green.png', size: 192 },
+  { name: 'pwa-icon-512-green.png', size: 512 },
+  { name: 'pwa-apple-touch-green.png', size: 180 },
+  { name: 'pwa-icon-maskable-512-green.png', size: 512, maskable: true },
+]
+
+const legacyIcons = [
+  'icon-192.png',
+  'icon-512.png',
+  'apple-touch-icon.png',
+  'icon-maskable-512.png',
 ]
 
 async function ensureLogo() {
@@ -28,7 +35,6 @@ async function ensureLogo() {
 
 async function generateIcon({ name, size, maskable = false }) {
   const outputPath = path.join(iconsDir, name)
-  const canvasSize = maskable ? size : size
   const logoSize = maskable ? Math.round(size * 0.8) : size
 
   const logo = await sharp(logoPath)
@@ -38,18 +44,13 @@ async function generateIcon({ name, size, maskable = false }) {
 
   await sharp({
     create: {
-      width: canvasSize,
-      height: canvasSize,
+      width: size,
+      height: size,
       channels: 4,
       background: { r: 10, g: 10, b: 10, alpha: 1 },
     },
   })
-    .composite([
-      {
-        input: logo,
-        gravity: 'centre',
-      },
-    ])
+    .composite([{ input: logo, gravity: 'centre' }])
     .png()
     .toFile(outputPath)
 
@@ -63,4 +64,13 @@ for (const spec of sizes) {
   await generateIcon(spec)
 }
 
-console.log('Iconos PWA generados en public/assets/icons/')
+for (const legacy of legacyIcons) {
+  try {
+    await unlink(path.join(iconsDir, legacy))
+    console.log(`✗ Eliminado icono legacy: ${legacy}`)
+  } catch {
+    // ya no existe
+  }
+}
+
+console.log('Iconos PWA verdes generados en public/assets/icons/')

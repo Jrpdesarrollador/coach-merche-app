@@ -18,7 +18,9 @@
     "db:push": "supabase db push --linked",
     "db:push:seed": "supabase db push --linked --include-seed",
     "db:types": "supabase gen types typescript --linked > src/types/database.generated.ts",
+    "icons:recolor": "node scripts/recolor-logo-green.mjs",
     "icons:generate": "node scripts/generate-pwa-icons.mjs",
+    "icons:build": "node scripts/recolor-logo-green.mjs && node scripts/generate-pwa-icons.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

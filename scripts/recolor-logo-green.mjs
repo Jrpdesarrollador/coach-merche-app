@@ -1,6 +1,7 @@
 /**
- * Convierte el logo dorado oficial a la paleta lima (#aed419).
- * Preserva negro, sombras y brillo metálico; solo desplaza el matiz dorado.
+ * Convierte el logo dorado oficial a verde lima claramente visible.
+ * Matiz 85° (no 68° de #aed419) para evitar percepción dorada en iconos PWA.
+ * Preserva la luminancia original para el relieve 3D metálico.
  */
 import { access, copyFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
@@ -12,31 +13,9 @@ const backupPath = path.join(rootDir, 'public/assets/brand/logo-coach-merche-gol
 const outputPath = path.join(rootDir, 'public/assets/brand/logo-coach-merche.png')
 const legacyPath = path.join(rootDir, 'public/assets/brand/logo-coach-merche-green.png')
 
-const TARGET = { r: 174, g: 212, b: 25 }
-
-function rgbToHsl(r, g, b) {
-  r /= 255
-  g /= 255
-  b /= 255
-  const max = Math.max(r, g, b)
-  const min = Math.min(r, g, b)
-  const l = (max + min) / 2
-  if (max === min) return { h: 0, s: 0, l }
-  const d = max - min
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-  let h
-  switch (max) {
-    case r:
-      h = ((g - b) / d + (g < b ? 6 : 0)) / 6
-      break
-    case g:
-      h = ((b - r) / d + 2) / 6
-      break
-    default:
-      h = ((r - g) / d + 4) / 6
-  }
-  return { h, s, l }
-}
+/** Lima verde visible en pantallas pequeñas (≈ #9ae619, G/R > 1.4) */
+const ICON_GREEN_HUE = 85 / 360
+const ICON_GREEN_SAT = 0.95
 
 function hslToRgb(h, s, l) {
   if (s === 0) {
@@ -62,24 +41,11 @@ function hslToRgb(h, s, l) {
 
 function recolorPixel(r, g, b) {
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-  if (luminance < 18) return { r, g, b }
+  if (luminance < 12) return { r, g, b }
 
-  const { h, s, l } = rgbToHsl(r, g, b)
-  if (s < 0.08) return { r, g, b }
-
-  const hueDeg = h * 360
-  const isBrandMetal =
-    hueDeg >= 15 &&
-    hueDeg <= 95 &&
-    s >= 0.1 &&
-    l >= 0.06 &&
-    luminance < 245
-
-  if (!isBrandMetal) return { r, g, b }
-
-  const targetHue = rgbToHsl(TARGET.r, TARGET.g, TARGET.b).h
-  const next = hslToRgb(targetHue, Math.min(1, s * 1.35), l)
-  return next
+  const t = Math.min(1, luminance / 220)
+  const newL = 0.08 + t * 0.82
+  return hslToRgb(ICON_GREEN_HUE, ICON_GREEN_SAT, newL)
 }
 
 await access(backupPath)
@@ -111,7 +77,6 @@ await copyFile(outputPath, legacyPath)
 const sample = await sharp(outputPath).resize(100, 100).raw().toBuffer({ resolveWithObject: true })
 let sr = 0
 let sg = 0
-let sb = 0
 let n = 0
 for (let i = 0; i < sample.data.length; i += sample.info.channels) {
   const r = sample.data[i]
@@ -120,9 +85,14 @@ for (let i = 0; i < sample.data.length; i += sample.info.channels) {
   if (r + g + b < 30) continue
   sr += r
   sg += g
-  sb += b
   n++
 }
 
+const gr = sg / sr
 console.log(`✓ Logo recoloreado → ${outputPath}`)
-console.log(`  Muestra RGB media: ${Math.round(sr / n)}, ${Math.round(sg / n)}, ${Math.round(sb / n)}`)
+console.log(`  Muestra RGB media: ${Math.round(sr / n)}, ${Math.round(sg / n)} | G/R: ${gr.toFixed(2)}`)
+
+if (gr < 1.35) {
+  console.warn('⚠ G/R bajo — el verde puede seguir pareciendo dorado')
+  process.exit(1)
+}

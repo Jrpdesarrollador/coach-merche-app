@@ -15,24 +15,26 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
-        'assets/icons/icon-192.png',
-        'assets/icons/icon-512.png',
-        'assets/icons/icon-maskable-512.png',
-        'assets/icons/apple-touch-icon.png',
+        'assets/icons/pwa-icon-192-green.png',
+        'assets/icons/pwa-icon-512-green.png',
+        'assets/icons/pwa-icon-maskable-512-green.png',
+        'assets/icons/pwa-apple-touch-green.png',
         'assets/brand/logo-coach-merche.png',
         'assets/brand/coach-avatar-intro.png',
         'manifest.webmanifest',
       ],
       manifest: false,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,webp,woff2}'],
         navigateFallback: '/index.html',
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/assets/'),
             handler: 'CacheFirst',
             options: {
-              cacheName: 'coach-merche-assets-v4',
+              cacheName: 'coach-merche-assets-v5',
               expiration: {
                 maxEntries: 64,
                 maxAgeSeconds: 60 * 60 * 24 * 30,
