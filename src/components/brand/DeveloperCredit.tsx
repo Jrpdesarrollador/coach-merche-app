@@ -1,7 +1,6 @@
 import { cn } from '@/utils/cn'
 
 export const DEVELOPER_LOGO_SRC = '/assets/brand/jrpdesarrollador-logo.png'
-const DEVELOPER_URL = 'https://github.com/Jrpdesarrollador'
 
 interface DeveloperCreditProps {
   className?: string
@@ -20,17 +19,13 @@ export function DeveloperCredit({ className, subtle = false }: DeveloperCreditPr
         className,
       )}
     >
-      <a
-        href={DEVELOPER_URL}
-        target="_blank"
-        rel="noopener noreferrer"
+      <div
         className={cn(
-          'group inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors duration-200',
+          'inline-flex items-center gap-1.5 rounded-full px-2 py-1',
           'text-[10px] tracking-[0.16em] text-ink-muted uppercase',
-          'hover:text-ink-soft focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lime/40',
-          subtle && 'opacity-70 hover:opacity-100',
+          subtle && 'opacity-70',
         )}
-        aria-label="Desarrollada por Jrpdesarrollador — abrir perfil en GitHub"
+        aria-label="Desarrollada por Jrpdesarrollador"
       >
         <img
           src={DEVELOPER_LOGO_SRC}
@@ -40,15 +35,15 @@ export function DeveloperCredit({ className, subtle = false }: DeveloperCreditPr
           height={18}
           loading="lazy"
           decoding="async"
-          className="size-[18px] shrink-0 rounded-[4px] object-contain opacity-75 transition-opacity duration-200 group-hover:opacity-100"
+          className="size-[18px] shrink-0 rounded-[4px] object-contain opacity-75"
         />
         <span className="leading-none">
           App by{' '}
-          <span className="font-medium text-ink-soft/90 transition-colors duration-200 group-hover:text-lime/90">
+          <span className="font-medium text-ink-soft/90">
             Jrpdesarrollador
           </span>
         </span>
-      </a>
+      </div>
     </footer>
   )
 }
