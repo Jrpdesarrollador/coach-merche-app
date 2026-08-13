@@ -17,9 +17,11 @@ export default defineConfig({
       includeAssets: [
         'assets/icons/icon-192.png',
         'assets/icons/icon-512.png',
+        'assets/icons/icon-maskable-512.png',
         'assets/icons/apple-touch-icon.png',
         'assets/brand/logo-coach-merche.png',
         'assets/brand/coach-avatar-intro.png',
+        'manifest.webmanifest',
       ],
       manifest: false,
       workbox: {
@@ -30,7 +32,7 @@ export default defineConfig({
             urlPattern: ({ url }) => url.pathname.startsWith('/assets/'),
             handler: 'CacheFirst',
             options: {
-              cacheName: 'coach-merche-assets-v2',
+              cacheName: 'coach-merche-assets-v3',
               expiration: {
                 maxEntries: 64,
                 maxAgeSeconds: 60 * 60 * 24 * 30,
