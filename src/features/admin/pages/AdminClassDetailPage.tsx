@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ChevronLeftIcon, UsersIcon } from '@/components/icons'
 import { Avatar, Badge, Button, Card, EmptyState, Select, Skeleton } from '@/components/ui'
 import { useToast } from '@/hooks/useToast'
+import { bookingSourceLabels } from '@/features/admin/adminLabels'
 import { adminService, classesService, manualAdminService, toFriendlyMessage } from '@/services'
 import type { AdminProfile, ClassParticipant } from '@/types'
 import { formatClassDate, formatClassTime, formatShortDate } from '@/utils/datetime'
@@ -109,7 +110,7 @@ export function AdminClassDetailPage() {
       </div>
 
       <Card highlight>
-        <p className="mb-3 font-display text-lg text-ink">Añadir alumna manualmente</p>
+        <p className="mb-3 font-display text-lg text-ink">Apuntar alumna tú misma</p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <Select
             id="assign-user"
@@ -143,7 +144,7 @@ export function AdminClassDetailPage() {
         {participants.length === 0 ? (
           <EmptyState
             title="Nadie apuntada todavía"
-            description="Añade alumnas manualmente o espera reservas desde la app."
+            description="Apúntalas tú o espera a que reserven solas desde la app."
             icon={<UsersIcon width={24} height={24} />}
           />
         ) : (
@@ -166,9 +167,9 @@ export function AdminClassDetailPage() {
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <Badge tone={isManualBooking ? 'warning' : 'lime'}>
-                      {isManualBooking ? 'Manual' : 'App'}
+                      {isManualBooking ? bookingSourceLabels.manual : bookingSourceLabels.app}
                     </Badge>
-                    {participant.is_manual && <Badge tone="neutral">Sin app</Badge>}
+                    {participant.is_manual && <Badge tone="neutral">Sin app aún</Badge>}
                     {participant.attendance_confirmed_at && (
                       <Badge tone={participant.attended ? 'lime' : 'neutral'}>
                         {participant.attended ? 'Asistió' : 'No asistió'}

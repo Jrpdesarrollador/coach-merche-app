@@ -25,8 +25,7 @@ export function AdminHero() {
           Panel <span className="text-gold">de Gestión</span>
         </h1>
         <p className="mt-2 hidden max-w-xl text-sm leading-relaxed text-ink-muted sm:mt-3 sm:block">
-          Gestiona reservas, pagos y avisos de tu comunidad. Diseñado para usarse con el dedo en
-          iPad y móvil, además de ordenador.
+          Todo lo que necesitas cada día: alumnas, cobros, clases y avisos. Pensado para iPad y móvil.
         </p>
         <div className="mt-3 flex flex-wrap gap-2 sm:mt-4">
           <span className="rounded-full border border-line-olive bg-green-deep/80 px-2.5 py-1.5 text-[11px] text-ink-soft sm:px-3 sm:py-2 sm:text-xs">

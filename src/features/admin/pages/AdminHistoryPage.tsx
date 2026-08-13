@@ -28,10 +28,10 @@ import { formatShortDate } from '@/utils/datetime'
 import { cn } from '@/utils/cn'
 
 const kindLabels: Record<HistoryEntryKind, string> = {
-  manual_payment: 'Pago manual',
+  manual_payment: 'Cobro por clase',
   monthly_payment: 'Cuota mensual',
   manual_attendance: 'Asistencia',
-  booking: 'Reserva',
+  booking: 'Reservó sola',
 }
 
 const kindTones: Record<HistoryEntryKind, 'lime' | 'gold' | 'neutral' | 'warning'> = {
@@ -43,10 +43,10 @@ const kindTones: Record<HistoryEntryKind, 'lime' | 'gold' | 'neutral' | 'warning
 
 const filterOptions = [
   { value: '', label: 'Todos los tipos' },
-  { value: 'manual_payment', label: 'Pagos manuales' },
+  { value: 'manual_payment', label: 'Cobros por clase' },
   { value: 'monthly_payment', label: 'Cuotas mensuales' },
   { value: 'manual_attendance', label: 'Asistencias' },
-  { value: 'booking', label: 'Reservas app' },
+  { value: 'booking', label: 'Reservó sola' },
 ] as const
 
 function displayName(profile: AdminProfile): string {

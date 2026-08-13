@@ -1,10 +1,12 @@
-import { NavLink } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@/utils/cn'
-import { adminNavGroups, adminNavItems } from '../adminNav'
+import { adminMobileMoreNav, adminMobilePrimaryNav, adminNavGroups } from '../adminNav'
+import { AdminMoreSheet } from './AdminMoreSheet'
 
 function tabClassName(isActive: boolean) {
   return cn(
-    'inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition-colors',
+    'inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full border px-3.5 py-2.5 text-sm font-semibold whitespace-nowrap transition-colors',
     isActive
       ? 'border-lime bg-lime font-black text-black'
       : 'border-line bg-bg-secondary text-ink-muted hover:text-ink-soft',
@@ -24,8 +26,9 @@ export function AdminTabNav() {
             {group.label}
           </p>
           <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {group.items.map(({ to, label, end }) => (
+            {group.items.map(({ to, label, icon, end }) => (
               <NavLink key={to} to={to} end={end} className={({ isActive }) => tabClassName(isActive)}>
+                <span aria-hidden>{icon}</span>
                 {label}
               </NavLink>
             ))}
@@ -36,42 +39,63 @@ export function AdminTabNav() {
   )
 }
 
-/** Barra inferior en móvil — 5 accesos principales. */
+/** Barra inferior en móvil — 5 accesos principales + "Más". */
 export function AdminBottomNav() {
-  const mobileItems = adminNavItems.filter((item) =>
-    ['/gestion', '/gestion/registrar', '/gestion/usuarios', '/gestion/historial', '/gestion/clases'].includes(
-      item.to,
-    ),
+  const [moreOpen, setMoreOpen] = useState(false)
+  const location = useLocation()
+  const isMoreActive = adminMobileMoreNav.some((item) =>
+    item.end ? location.pathname === item.to : location.pathname.startsWith(item.to),
   )
 
   return (
-    <nav
-      aria-label="Navegación del panel"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg-primary/95 backdrop-blur-lg sm:hidden"
-    >
-      <ul className="grid grid-cols-5 px-1 pt-2 pb-[calc(0.5rem+var(--safe-bottom))]">
-        {mobileItems.map(({ to, label, icon, end }) => (
-          <li key={to}>
-            <NavLink
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                cn(
-                  'flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl text-[9px] font-medium transition-colors',
-                  isActive
-                    ? 'bg-lime/10 font-extrabold text-lime'
-                    : 'text-ink-muted hover:text-ink-soft',
-                )
-              }
+    <>
+      <nav
+        aria-label="Navegación del panel"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg-primary/95 backdrop-blur-lg sm:hidden"
+      >
+        <ul className="grid grid-cols-6 px-1 pt-2 pb-[calc(0.5rem+var(--safe-bottom))]">
+          {adminMobilePrimaryNav.map(({ to, label, icon, end }) => (
+            <li key={to}>
+              <NavLink
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  cn(
+                    'flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[9px] font-medium transition-colors',
+                    isActive
+                      ? 'bg-lime/10 font-extrabold text-lime'
+                      : 'text-ink-muted hover:text-ink-soft',
+                  )
+                }
+              >
+                <span className="text-base leading-none" aria-hidden>
+                  {icon}
+                </span>
+                <span className="truncate">{label}</span>
+              </NavLink>
+            </li>
+          ))}
+          <li>
+            <button
+              type="button"
+              onClick={() => setMoreOpen(true)}
+              className={cn(
+                'flex min-h-14 w-full flex-col items-center justify-center gap-0.5 rounded-xl text-[9px] font-medium transition-colors',
+                isMoreActive || moreOpen
+                  ? 'bg-lime/10 font-extrabold text-lime'
+                  : 'text-ink-muted hover:text-ink-soft',
+              )}
             >
               <span className="text-base leading-none" aria-hidden>
-                {icon}
+                ⋯
               </span>
-              <span>{label}</span>
-            </NavLink>
+              <span>Más</span>
+            </button>
           </li>
-        ))}
-      </ul>
-    </nav>
+        </ul>
+      </nav>
+
+      <AdminMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+    </>
   )
 }

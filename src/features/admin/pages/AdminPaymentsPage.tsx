@@ -13,6 +13,7 @@ import {
 import type { AdminProfile, ManualPaymentRecord, Payment, PaymentStatus } from '@/types'
 import { eurosToCents, formatCurrency, formatEurosInput } from '@/utils/currency'
 import { formatShortDate } from '@/utils/datetime'
+import { cn } from '@/utils/cn'
 
 const statusLabels: Record<PaymentStatus, string> = {
   pending: 'Pendiente',
@@ -26,6 +27,8 @@ const statusTones: Record<PaymentStatus, 'warning' | 'lime' | 'danger'> = {
   overdue: 'danger',
 }
 
+type PaymentsTab = 'class' | 'monthly'
+
 function currentMonth(): string {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -37,6 +40,7 @@ function displayName(profile: AdminProfile): string {
 
 export function AdminPaymentsPage() {
   const { showToast } = useToast()
+  const [tab, setTab] = useState<PaymentsTab>('class')
   const [profiles, setProfiles] = useState<AdminProfile[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [manualPayments, setManualPayments] = useState<ManualPaymentRecord[]>([])
@@ -55,6 +59,11 @@ export function AdminPaymentsPage() {
   const students = useMemo(
     () => profiles.filter((profile) => profile.role === 'user'),
     [profiles],
+  )
+
+  const pendingMonthly = useMemo(
+    () => payments.filter((p) => p.status === 'pending' || p.status === 'overdue').length,
+    [payments],
   )
 
   async function reload() {
@@ -163,7 +172,7 @@ export function AdminPaymentsPage() {
   if (loading) {
     return (
       <section className="flex flex-col gap-3">
-        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-12 rounded-[16px]" />
         <Skeleton className="h-32" />
         <Skeleton className="h-48" />
       </section>
@@ -180,185 +189,225 @@ export function AdminPaymentsPage() {
 
   return (
     <>
-      <section className="flex flex-col gap-4">
-        <Card highlight>
-          <p className="mb-3 font-display text-lg text-ink">Registrar cuota mensual</p>
-          <div className="flex flex-col gap-3">
-            <Select
-              id="payment-user"
-              label="Alumna"
-              value={selectedUserId}
-              onChange={(event) => setSelectedUserId(event.target.value)}
-              placeholder="Elige alumna"
-              options={students.map((student) => ({
-                value: student.id,
-                label: displayName(student),
-              }))}
-            />
-            <Input
-              id="payment-month"
-              label="Mes (YYYY-MM)"
-              value={month}
-              onChange={(event) => setMonth(event.target.value)}
-            />
-            <Input
-              id="payment-amount"
-              label="Importe (€)"
-              type="number"
-              min={0.01}
-              step={0.01}
-              placeholder="45.00"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              hint="Ej.: 45,00 €"
-            />
-            <Button variant="gold" loading={saving} onClick={() => void handleCreatePayment()}>
-              Guardar cuota
-            </Button>
-          </div>
-        </Card>
-
-        <AdminSection
-          title="Cuotas mensuales"
-          description="Seguimiento de suscripción / cuota fija mensual"
+      <div className="flex gap-2 rounded-[16px] border border-line bg-surface p-1.5">
+        <button
+          type="button"
+          onClick={() => setTab('class')}
+          className={cn(
+            'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-bold transition-colors',
+            tab === 'class' ? 'bg-lime text-black' : 'text-ink-muted hover:text-ink-soft',
+          )}
         >
-          {rows.length === 0 ? (
-            <EmptyState
-              title="Sin alumnas registradas"
-              description="Cuando haya alumnas podrás registrar sus cuotas."
-              icon={<CreditCardIcon width={24} height={24} />}
-            />
-          ) : (
-            <Card className="overflow-x-auto p-0">
-              <table className="w-full min-w-[32rem] text-sm">
-                <thead>
-                  <tr className="border-b border-line text-left text-xs tracking-wide text-ink-muted uppercase">
-                    <th className="px-4 py-3 font-semibold">Alumna</th>
-                    <th className="px-4 py-3 font-semibold">Mes</th>
-                    <th className="px-4 py-3 font-semibold">Importe</th>
-                    <th className="px-4 py-3 font-semibold">Estado</th>
-                    <th className="px-4 py-3 font-semibold">Acción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map(({ student, payment }) => {
-                    const key = payment?.id ?? student.id
-                    return (
-                      <tr key={key} className="border-b border-line/70 last:border-0">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Avatar name={displayName(student)} size="sm" />
-                            <div>
-                              <p className="font-medium text-ink">{displayName(student)}</p>
-                              <p className="text-xs text-ink-muted">{student.email}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-ink-soft">{payment?.month ?? '—'}</td>
+          Por clase
+          <span className="text-[10px] font-normal opacity-80">7 €</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('monthly')}
+          className={cn(
+            'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-bold transition-colors',
+            tab === 'monthly' ? 'bg-lime text-black' : 'text-ink-muted hover:text-ink-soft',
+          )}
+        >
+          Cuota mensual
+          {pendingMonthly > 0 && (
+            <Badge tone={tab === 'monthly' ? 'neutral' : 'warning'}>{pendingMonthly}</Badge>
+          )}
+        </button>
+      </div>
+
+      {tab === 'class' && (
+        <section className="flex flex-col gap-4">
+          <Card highlight className="border-line-gold/40">
+            <p className="mb-1 font-display text-lg text-ink">Pagos por clase (7 €)</p>
+            <p className="mb-3 text-xs text-ink-muted">
+              Efectivo y transferencias — también puedes cobrar desde Registrar.
+            </p>
+            <Link
+              to="/gestion/registrar?tab=pago"
+              className="mb-4 inline-flex min-h-11 items-center rounded-xl border border-line-olive bg-green-deep/80 px-4 text-sm font-bold text-lime"
+            >
+              + Cobrar ahora en Registrar
+            </Link>
+          </Card>
+
+          <AdminSection
+            title="Historial de cobros"
+            description="Todos los pagos por clase registrados."
+          >
+            {manualPayments.length === 0 ? (
+              <EmptyState
+                title="Sin cobros todavía"
+                description="Cuando cobres una clase aparecerá aquí."
+                icon={<CreditCardIcon width={24} height={24} />}
+              />
+            ) : (
+              <Card className="overflow-x-auto p-0">
+                <table className="w-full min-w-[36rem] text-sm">
+                  <thead>
+                    <tr className="border-b border-line text-left text-xs tracking-wide text-ink-muted uppercase">
+                      <th className="px-4 py-3 font-semibold">Fecha</th>
+                      <th className="px-4 py-3 font-semibold">Alumna</th>
+                      <th className="px-4 py-3 font-semibold">Importe</th>
+                      <th className="px-4 py-3 font-semibold">Notas</th>
+                      <th className="px-4 py-3 font-semibold">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {manualPayments.map((payment) => (
+                      <tr key={payment.id} className="border-b border-line/70 last:border-0">
+                        <td className="px-4 py-3 text-ink-soft">{formatShortDate(payment.paid_at)}</td>
+                        <td className="px-4 py-3 font-medium text-ink">{payment.user_name}</td>
                         <td className="px-4 py-3 text-ink-soft">
-                          {payment ? formatCurrency(payment.amount_cents) : '—'}
+                          {formatCurrency(payment.amount_cents)}
+                          <span className="ml-1 text-xs text-ink-muted">
+                            ({payment.classes_credited} cls.)
+                          </span>
+                        </td>
+                        <td className="max-w-[12rem] truncate px-4 py-3 text-ink-muted">
+                          {payment.notes ?? '—'}
                         </td>
                         <td className="px-4 py-3">
-                          {payment ? (
-                            <Badge tone={statusTones[payment.status]}>
-                              {statusLabels[payment.status]}
-                            </Badge>
-                          ) : (
-                            <Badge tone="neutral">Sin cuota</Badge>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          {payment && (
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="secondary" onClick={() => openEdit(payment)}>
+                              Editar
+                            </Button>
                             <Button
                               size="sm"
-                              variant={payment.status === 'paid' ? 'secondary' : 'gold'}
-                              onClick={() => void toggleStatus(payment)}
+                              variant="danger"
+                              loading={deletingId === payment.id}
+                              onClick={() => void handleDeleteManual(payment.id)}
                             >
-                              {payment.status === 'paid' ? 'Marcar pendiente' : 'Marcar pagado'}
+                              Eliminar
                             </Button>
-                          )}
+                          </div>
                         </td>
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </Card>
-          )}
-        </AdminSection>
+                    ))}
+                  </tbody>
+                </table>
+              </Card>
+            )}
+          </AdminSection>
+        </section>
+      )}
 
-        <AdminSection
-          title="Pagos manuales (7 €/clase)"
-          description="Efectivo y transferencias — edita o elimina registros erróneos"
-          actions={
-            <Link
-              to="/gestion/registrar"
-              className="inline-flex min-h-9 items-center rounded-xl border border-line-olive px-3 text-xs font-bold text-lime"
-            >
-              + Nuevo pago
-            </Link>
-          }
-        >
-          {manualPayments.length === 0 ? (
-            <EmptyState
-              title="Sin pagos manuales"
-              description="Regístralos en Registrar o desde aquí cuando haya movimientos."
-              icon={<CreditCardIcon width={24} height={24} />}
-            />
-          ) : (
-            <Card className="overflow-x-auto p-0">
-              <table className="w-full min-w-[36rem] text-sm">
-                <thead>
-                  <tr className="border-b border-line text-left text-xs tracking-wide text-ink-muted uppercase">
-                    <th className="px-4 py-3 font-semibold">Fecha</th>
-                    <th className="px-4 py-3 font-semibold">Alumna</th>
-                    <th className="px-4 py-3 font-semibold">Importe</th>
-                    <th className="px-4 py-3 font-semibold">Notas</th>
-                    <th className="px-4 py-3 font-semibold">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {manualPayments.map((payment) => (
-                    <tr key={payment.id} className="border-b border-line/70 last:border-0">
-                      <td className="px-4 py-3 text-ink-soft">{formatShortDate(payment.paid_at)}</td>
-                      <td className="px-4 py-3 font-medium text-ink">{payment.user_name}</td>
-                      <td className="px-4 py-3 text-ink-soft">
-                        {formatCurrency(payment.amount_cents)}
-                        <span className="ml-1 text-xs text-ink-muted">
-                          ({payment.classes_credited} cls.)
-                        </span>
-                      </td>
-                      <td className="max-w-[12rem] truncate px-4 py-3 text-ink-muted">
-                        {payment.notes ?? '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="secondary" onClick={() => openEdit(payment)}>
-                            Editar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            loading={deletingId === payment.id}
-                            onClick={() => void handleDeleteManual(payment.id)}
-                          >
-                            Eliminar
-                          </Button>
-                        </div>
-                      </td>
+      {tab === 'monthly' && (
+        <section className="flex flex-col gap-4">
+          <Card highlight>
+            <p className="mb-1 font-display text-lg text-ink">Nueva cuota mensual</p>
+            <p className="mb-3 text-xs text-ink-muted">Para alumnas con cuota fija cada mes.</p>
+            <div className="flex flex-col gap-3">
+              <Select
+                id="payment-user"
+                label="Alumna"
+                value={selectedUserId}
+                onChange={(event) => setSelectedUserId(event.target.value)}
+                placeholder="Elige alumna"
+                options={students.map((student) => ({
+                  value: student.id,
+                  label: displayName(student),
+                }))}
+              />
+              <Input
+                id="payment-month"
+                label="Mes"
+                type="month"
+                value={month}
+                onChange={(event) => setMonth(event.target.value)}
+              />
+              <Input
+                id="payment-amount"
+                label="Importe (€)"
+                type="number"
+                min={0.01}
+                step={0.01}
+                placeholder="45.00"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                hint="Ej.: 45,00 €"
+              />
+              <Button variant="gold" loading={saving} onClick={() => void handleCreatePayment()}>
+                Guardar cuota
+              </Button>
+            </div>
+          </Card>
+
+          <AdminSection
+            title="Cuotas de cada alumna"
+            description="Marca como pagado cuando recibas el dinero."
+          >
+            {rows.length === 0 ? (
+              <EmptyState
+                title="Sin alumnas registradas"
+                description="Cuando haya alumnas podrás registrar sus cuotas."
+                icon={<CreditCardIcon width={24} height={24} />}
+              />
+            ) : (
+              <Card className="overflow-x-auto p-0">
+                <table className="w-full min-w-[32rem] text-sm">
+                  <thead>
+                    <tr className="border-b border-line text-left text-xs tracking-wide text-ink-muted uppercase">
+                      <th className="px-4 py-3 font-semibold">Alumna</th>
+                      <th className="px-4 py-3 font-semibold">Mes</th>
+                      <th className="px-4 py-3 font-semibold">Importe</th>
+                      <th className="px-4 py-3 font-semibold">Estado</th>
+                      <th className="px-4 py-3 font-semibold">Acción</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
-          )}
-        </AdminSection>
-      </section>
+                  </thead>
+                  <tbody>
+                    {rows.map(({ student, payment }) => {
+                      const key = payment?.id ?? student.id
+                      return (
+                        <tr key={key} className="border-b border-line/70 last:border-0">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <Avatar name={displayName(student)} size="sm" />
+                              <div>
+                                <p className="font-medium text-ink">{displayName(student)}</p>
+                                <p className="text-xs text-ink-muted">{student.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-ink-soft">{payment?.month ?? '—'}</td>
+                          <td className="px-4 py-3 text-ink-soft">
+                            {payment ? formatCurrency(payment.amount_cents) : '—'}
+                          </td>
+                          <td className="px-4 py-3">
+                            {payment ? (
+                              <Badge tone={statusTones[payment.status]}>
+                                {statusLabels[payment.status]}
+                              </Badge>
+                            ) : (
+                              <Badge tone="neutral">Sin cuota</Badge>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            {payment && (
+                              <Button
+                                size="sm"
+                                variant={payment.status === 'paid' ? 'secondary' : 'gold'}
+                                onClick={() => void toggleStatus(payment)}
+                              >
+                                {payment.status === 'paid' ? 'Marcar pendiente' : 'Marcar pagado'}
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </Card>
+            )}
+          </AdminSection>
+        </section>
+      )}
 
       <Modal
         open={editPayment !== null}
         onClose={() => setEditPayment(null)}
-        title="Editar pago manual"
+        title="Editar cobro"
         footer={
           <>
             <Button variant="secondary" fullWidth onClick={() => setEditPayment(null)}>
