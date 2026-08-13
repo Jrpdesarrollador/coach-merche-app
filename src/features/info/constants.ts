@@ -7,7 +7,7 @@ export const CONTACT = {
   zone: 'Olivar y Las Sedas',
 } as const
 
-export const INSTAGRAM_QR_SRC = '/assets/brand/instagram-qr-chuca80.png'
+export const INSTAGRAM_QR_SRC = '/assets/brand/instagram-qr.png'
 
 export const FAQ_ITEMS = [
   {
