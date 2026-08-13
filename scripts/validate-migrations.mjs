@@ -446,7 +446,51 @@ async function runSmokeTests(db) {
     visiblePosts.rows[0].total === 1,
   )
 
+  await signInAs(MERCHE)
+  const notifyPost = await db.query(`
+    insert into public.posts (title, content, published)
+    values ('Aviso test', 'Contenido de prueba para alumnas', true)
+    returning id
+  `)
+  const notifyPostId = notifyPost.rows[0].id
+
+  const newPostNotifications = await db.query(`
+    select count(*)::int as total
+    from public.notifications
+    where type = 'new_post'
+      and metadata->>'post_id' = '${notifyPostId}'
+  `)
+  check(
+    'notify_new_post crea avisos in-app para alumnas aprobadas',
+    newPostNotifications.rows[0].total === 2,
+    `total=${newPostNotifications.rows[0].total}`,
+  )
+
+  const publishRpc = await db.query(`
+    select public.publish_post_notifications('${notifyPostId}') as data
+  `)
+  check(
+    'publish_post_notifications devuelve alumnas destinatarias',
+    publishRpc.rows[0]?.data?.recipient_count === 2 &&
+      publishRpc.rows[0]?.data?.already_sent === false,
+    JSON.stringify(publishRpc.rows[0]?.data),
+  )
+
+  await db.exec('set role service_role;')
+  await db.query(`select public.mark_post_notifications_sent('${notifyPostId}')`)
+  await db.exec('reset role;')
+  await signInAs(MERCHE)
+  const publishAgain = await db.query(`
+    select public.publish_post_notifications('${notifyPostId}') as data
+  `)
+  check(
+    'publish_post_notifications evita duplicados',
+    publishAgain.rows[0]?.data?.already_sent === true,
+    JSON.stringify(publishAgain.rows[0]?.data),
+  )
+
   // ---- Notificaciones y pagos -------------------------------------------
+  await signInAs(ANA)
   const anaPaymentsInsert = await expectFailure(
     `insert into public.payments (user_id, month, amount_cents) values ('${ANA}', '2026-08', 4500)`,
     'row-level security',

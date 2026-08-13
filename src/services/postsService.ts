@@ -6,6 +6,13 @@ type PostInsert = Database['public']['Tables']['posts']['Insert']
 type PostUpdate = Database['public']['Tables']['posts']['Update']
 export type PostMediaType = Database['public']['Tables']['posts']['Row']['media_type']
 
+export interface PublishPostNotificationResult {
+  recipientCount: number
+  alreadySent: boolean
+  pushSent: number
+  emailsSent: number
+}
+
 const IMAGE_BUCKET = 'posts'
 const VIDEO_BUCKET = 'post-media'
 
@@ -190,6 +197,53 @@ async function deletePost(post: Post): Promise<void> {
   if (error) throw serviceError(error)
 }
 
+/** Envía email + push tras publicar. Los avisos in-app los crea el trigger SQL. */
+async function publishPostNotifications(postId: string): Promise<PublishPostNotificationResult> {
+  if (!isSupabaseConfigured) {
+    throw serviceError(new Error('Supabase no configurado'))
+  }
+
+  const { data: prep, error: prepError } = await supabase.rpc('publish_post_notifications', {
+    p_post_id: postId,
+  })
+
+  if (prepError) throw serviceError(prepError)
+
+  const prepRow = prep as {
+    already_sent?: boolean
+    recipient_count?: number
+  } | null
+
+  if (prepRow?.already_sent) {
+    return {
+      recipientCount: prepRow.recipient_count ?? 0,
+      alreadySent: true,
+      pushSent: 0,
+      emailsSent: 0,
+    }
+  }
+
+  const { data, error } = await supabase.functions.invoke('notify-new-post', {
+    body: { post_id: postId },
+  })
+
+  if (error) throw serviceError(error)
+
+  const result = data as {
+    already_sent?: boolean
+    recipient_count?: number
+    push?: { sent?: number }
+    email?: { sent?: number }
+  } | null
+
+  return {
+    recipientCount: result?.recipient_count ?? prepRow?.recipient_count ?? 0,
+    alreadySent: Boolean(result?.already_sent),
+    pushSent: result?.push?.sent ?? 0,
+    emailsSent: result?.email?.sent ?? 0,
+  }
+}
+
 export const postsService = {
   getLatestPublished,
   getPublishedById,
@@ -197,6 +251,7 @@ export const postsService = {
   listAll,
   createPost,
   updatePost,
+  publishPostNotifications,
   deletePost,
   uploadImage,
   uploadVideo,

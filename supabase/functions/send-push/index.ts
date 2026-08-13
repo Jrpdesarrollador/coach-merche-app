@@ -1,20 +1,19 @@
 // Edge Function: envío de Web Push a suscripciones guardadas
 //
-// POST { user_id?, title, body, url? }
+// POST { user_id?, user_ids?, title, body, url?, approved_only? }
 // Requiere VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT en secrets.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
+import { isVapidConfigured, sendWebPushBatch, type PushSubscriptionRow } from '../_shared/web-push.ts'
 
 interface PushPayload {
   user_id?: string
+  user_ids?: string[]
   title: string
   body: string
   url?: string
+  approved_only?: boolean
 }
 
 Deno.serve(async (request) => {
@@ -23,10 +22,7 @@ Deno.serve(async (request) => {
   }
 
   if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return jsonResponse({ error: 'Method not allowed' }, 405)
   }
 
   try {
@@ -36,34 +32,53 @@ Deno.serve(async (request) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
     let query = supabase.from('push_subscriptions').select('id, endpoint, keys, user_id')
+
     if (payload.user_id) {
       query = query.eq('user_id', payload.user_id)
+    } else if (payload.user_ids?.length) {
+      query = query.in('user_id', payload.user_ids)
     }
 
     const { data: subscriptions, error } = await query
     if (error) throw error
 
-    // Stub: en producción integrar `npm:web-push` con VAPID keys.
-    const attempted = subscriptions?.length ?? 0
+    let rows = (subscriptions ?? []) as PushSubscriptionRow[]
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        attempted,
-        sent: 0,
-        note: 'Configura VAPID y web-push para entrega real.',
-        payload,
-      }),
+    if (payload.approved_only !== false && !payload.user_id) {
+      const { data: approvedProfiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'user')
+        .eq('approval_status', 'approved')
+
+      if (profilesError) throw profilesError
+
+      const approvedIds = new Set((approvedProfiles ?? []).map((row) => row.id))
+      rows = rows.filter((row) => approvedIds.has(row.user_id))
+    }
+
+    const result = await sendWebPushBatch(
+      rows,
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        title: payload.title,
+        body: payload.body,
+        url: payload.url,
+      },
+      async (subscriptionId) => {
+        await supabase.from('push_subscriptions').delete().eq('id', subscriptionId)
       },
     )
+
+    return jsonResponse({
+      ok: true,
+      ...result,
+      vapid_configured: isVapidConfigured(),
+      note: isVapidConfigured()
+        ? undefined
+        : 'Configura VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY y VAPID_SUBJECT para entrega real.',
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(JSON.stringify({ ok: false, error: message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    })
+    return jsonResponse({ ok: false, error: message }, 500)
   }
 })

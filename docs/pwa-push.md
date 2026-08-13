@@ -71,6 +71,8 @@ select public.notify_class_reminders();
 
 Los avisos in-app ya funcionan con **NotificationBell** sin configurar push.
 
+Para **email y push al publicar una novedad**, consulta [notifications.md](./notifications.md).
+
 ## Probar logros (Fase 11)
 
 1. Como admin, confirma asistencia en una clase (`/gestion/clases/:id`).

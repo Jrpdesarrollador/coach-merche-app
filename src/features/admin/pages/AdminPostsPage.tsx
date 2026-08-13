@@ -13,6 +13,12 @@ function mediaLabel(type: PostMediaType): string {
   return 'Solo texto'
 }
 
+function notificationToastMessage(count: number): string {
+  if (count === 0) return 'Publicación guardada'
+  if (count === 1) return 'Publicación enviada a 1 alumna'
+  return `Publicación enviada a ${count} alumnas`
+}
+
 export function AdminPostsPage() {
   const { showToast } = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -117,12 +123,21 @@ export function AdminPostsPage() {
         published_at: new Date().toISOString(),
       }
 
+      const shouldNotify = !editingPost || !editingPost.published
+      let savedPost: Post
+
       if (editingPost) {
-        await postsService.updatePost(editingPost.id, payload)
-        showToast('Publicación actualizada — aviso enviado a alumnas')
+        savedPost = await postsService.updatePost(editingPost.id, payload)
+        if (shouldNotify) {
+          const result = await postsService.publishPostNotifications(savedPost.id)
+          showToast(notificationToastMessage(result.recipientCount))
+        } else {
+          showToast('Publicación actualizada')
+        }
       } else {
-        await postsService.createPost(payload)
-        showToast('Publicación creada — aviso enviado a alumnas')
+        savedPost = await postsService.createPost(payload)
+        const result = await postsService.publishPostNotifications(savedPost.id)
+        showToast(notificationToastMessage(result.recipientCount))
       }
 
       resetForm()
@@ -144,7 +159,8 @@ export function AdminPostsPage() {
           published: true,
           published_at: new Date().toISOString(),
         })
-        showToast('Publicación publicada — aviso enviado a alumnas')
+        const result = await postsService.publishPostNotifications(post.id)
+        showToast(notificationToastMessage(result.recipientCount))
       }
       await reload()
     } catch (error) {

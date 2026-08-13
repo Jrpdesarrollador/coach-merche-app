@@ -256,6 +256,7 @@ export interface Database {
           media_type: PostMediaType
           published: boolean
           published_at: string | null
+          notification_sent_at: string | null
           created_at: string
           updated_at: string
         }
@@ -269,6 +270,7 @@ export interface Database {
           media_type?: PostMediaType
           published?: boolean
           published_at?: string | null
+          notification_sent_at?: string | null
         }
         Update: Partial<Database['public']['Tables']['posts']['Insert']>
         Relationships: []
@@ -454,6 +456,20 @@ export interface Database {
       notify_class_reminders: {
         Args: Record<string, never>
         Returns: number
+      }
+      publish_post_notifications: {
+        Args: { p_post_id: string }
+        Returns: {
+          already_sent: boolean
+          recipient_count: number
+          post_id: string
+          title?: string
+          excerpt?: string
+        }
+      }
+      mark_post_notifications_sent: {
+        Args: { p_post_id: string }
+        Returns: boolean
       }
       upsert_push_subscription: {
         Args: { p_endpoint: string; p_keys: Record<string, string> }
