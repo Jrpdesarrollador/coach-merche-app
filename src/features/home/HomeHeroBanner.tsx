@@ -18,8 +18,10 @@ const HERO_IMAGE = {
 export function HomeHeroBanner() {
   return (
     <div className="home-hero-banner" aria-hidden>
-      <img {...HERO_IMAGE} className="home-hero-banner__img" />
-      <img {...HERO_IMAGE} aria-hidden className="home-hero-banner__img home-hero-banner__neon" />
+      <div className="home-hero-banner__frame">
+        <img {...HERO_IMAGE} className="home-hero-banner__img" />
+        <img {...HERO_IMAGE} aria-hidden className="home-hero-banner__img home-hero-banner__neon" />
+      </div>
     </div>
   )
 }
