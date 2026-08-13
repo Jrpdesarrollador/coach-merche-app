@@ -21,6 +21,22 @@ const LAURA = '33333333-3333-3333-3333-333333333333'
 const WORKOUT = '44444444-4444-4444-4444-444444444444'
 const CLASS = '55555555-5555-5555-5555-555555555555'
 
+/** Próximo martes o jueves (ISO) para pruebas de reserva. */
+async function nextTueOrThuDate(db, offsetDays = 1) {
+  const { rows } = await db.query(`
+    select d::date as dt
+    from generate_series(current_date + ${offsetDays}, current_date + 21, interval '1 day') as d
+    where extract(dow from d) in (2, 4)
+    order by d
+    limit 1
+  `)
+  const dt = rows[0]?.dt
+  if (!dt) throw new Error('No se encontró martes/jueves futuro para pruebas')
+  if (typeof dt === 'string') return dt.slice(0, 10)
+  if (dt instanceof Date) return dt.toISOString().slice(0, 10)
+  return String(dt).slice(0, 10)
+}
+
 /**
  * Reproduce las piezas de Supabase que las migraciones dan por hechas:
  * roles, esquema auth y esquema storage.
@@ -237,14 +253,31 @@ async function runSmokeTests(db) {
     `antes=${beforeRecurring.rows[0].total}, después=${afterRecurring.rows[0].total}`,
   )
 
+  const wrongSchedule = await db.query(`
+    select count(*)::int as total
+    from public.classes c
+    where c.status = 'scheduled'
+      and (c.date + c.start_time) >= (now() at time zone 'Europe/Madrid')
+      and not (
+        extract(dow from c.date) in (2, 4)
+        and c.start_time = '19:00'::time
+      )
+  `)
+  check(
+    'No quedan clases futuras fuera de mar/jue 19:00',
+    wrongSchedule.rows[0].total === 0,
+    `fuera_de_horario=${wrongSchedule.rows[0].total}`,
+  )
+
   // ---- Clase con una sola plaza -----------------------------------------
+  const futureClassDate = await nextTueOrThuDate(db)
   await signInAs()
   await db.exec(`
     insert into public.workouts (id, title, poster_url)
     values ('${WORKOUT}', 'FULL BODY', '/assets/workouts/full-body.jpg');
 
     insert into public.classes (id, workout_id, date, start_time, location, capacity, created_by)
-    values ('${CLASS}', '${WORKOUT}', (current_date + 7), '20:00', 'Urbanización', 1, '${MERCHE}');
+    values ('${CLASS}', '${WORKOUT}', '${futureClassDate}', '19:00', 'Box Coach Merche', 1, '${MERCHE}');
   `)
 
   await signInAs(ANA)
@@ -388,13 +421,13 @@ async function runSmokeTests(db) {
   )
 
   // ---- Clase pasada y cancelada -----------------------------------------
+  const cancelledClassDate = await nextTueOrThuDate(db, 7)
   await signInAs()
   await db.exec(`
-    insert into public.classes (id, workout_id, date, start_time, location, capacity)
+    insert into public.classes (id, workout_id, date, start_time, location, capacity, status)
     values
-      ('66666666-6666-6666-6666-666666666666', '${WORKOUT}', (current_date - 1), '20:00', 'Urbanización', 10),
-      ('77777777-7777-7777-7777-777777777777', '${WORKOUT}', (current_date + 7), '20:00', 'Urbanización', 10);
-    update public.classes set status = 'cancelled' where id = '77777777-7777-7777-7777-777777777777';
+      ('66666666-6666-6666-6666-666666666666', '${WORKOUT}', (current_date - 1), '20:00', 'Urbanización', 10, 'scheduled'),
+      ('77777777-7777-7777-7777-777777777777', '${WORKOUT}', '${cancelledClassDate}', '19:00', 'Box Coach Merche', 10, 'cancelled');
   `)
 
   await signInAs(ANA)
@@ -415,13 +448,27 @@ async function runSmokeTests(db) {
   )
 
   // ---- Permisos de escritura de contenido -------------------------------
+  const rlsClassDate = await nextTueOrThuDate(db, 3)
   const createClass = await expectFailure(
     `insert into public.classes (workout_id, date, start_time, location, capacity)
-     values ('${WORKOUT}', (current_date + 3), '19:00', 'Urbanización', 12)`,
+     values ('${WORKOUT}', '${rlsClassDate}', '19:00', 'Urbanización', 12)`,
     'row-level security',
   )
   check('Una alumna no puede crear clases', createClass.ok, createClass.detail)
 
+  await signInAs()
+  const invalidSchedule = await expectFailure(
+    `insert into public.classes (workout_id, date, start_time, location, capacity)
+     values ('${WORKOUT}', (current_date + 3), '20:00', 'Box Coach Merche', 12)`,
+    'INVALID_CLASS_SCHEDULE',
+  )
+  check(
+    'Merche no puede programar clase fuera de mar/jue 19:00',
+    invalidSchedule.ok,
+    invalidSchedule.detail,
+  )
+
+  await signInAs(ANA)
   const createWorkout = await expectFailure(
     `insert into public.workouts (title, poster_url) values ('Hackeo', '/x.jpg')`,
     'row-level security',
