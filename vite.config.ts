@@ -19,6 +19,7 @@ export default defineConfig({
         'assets/icons/icon-512.png',
         'assets/icons/apple-touch-icon.png',
         'assets/brand/logo-coach-merche.png',
+        'assets/brand/coach-avatar-intro.png',
       ],
       manifest: false,
       workbox: {
