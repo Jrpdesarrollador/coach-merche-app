@@ -33,8 +33,15 @@ dist-ssr
 coverage
 *.tsbuildinfo
 
+# Temp icon exports (generated PWA assets live in public/assets/icons/)
+prod-icon-*.png
+
 # Supabase CLI (config.toml, migrations/ y seed.sql SI se versionan)
 supabase/.temp/
 supabase/.branches/
 supabase/.env
 supabase/.env.keys
+
+# Local PWA icon drafts (tracked icons under public/assets/icons/)
+prod-icon-v*.png
+
