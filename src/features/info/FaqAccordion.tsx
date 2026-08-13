@@ -48,7 +48,7 @@ export function FaqAccordion({ items }: FaqAccordionProps) {
                     'flex size-8 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition-colors',
                     isOpen
                       ? 'border-lime bg-lime/10 text-lime'
-                      : 'border-line-gold bg-gold/5 text-gold',
+                      : 'border-line-lime bg-lime/5 text-lime',
                   )}
                 >
                   ?

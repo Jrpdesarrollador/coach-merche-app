@@ -218,7 +218,7 @@ export function AdminPaymentsPage() {
 
       {tab === 'class' && (
         <section className="flex flex-col gap-4">
-          <Card highlight className="border-line-gold/40">
+          <Card highlight className="border-line-lime/40">
             <p className="mb-1 font-display text-lg text-ink">Pagos por clase (7 €)</p>
             <p className="mb-3 text-xs text-ink-muted">
               Efectivo y transferencias — también puedes cobrar desde Registrar.
@@ -327,7 +327,7 @@ export function AdminPaymentsPage() {
                 onChange={(event) => setAmount(event.target.value)}
                 hint="Ej.: 45,00 €"
               />
-              <Button variant="gold" loading={saving} onClick={() => void handleCreatePayment()}>
+              <Button variant="primary" loading={saving} onClick={() => void handleCreatePayment()}>
                 Guardar cuota
               </Button>
             </div>
@@ -386,7 +386,7 @@ export function AdminPaymentsPage() {
                             {payment && (
                               <Button
                                 size="sm"
-                                variant={payment.status === 'paid' ? 'secondary' : 'gold'}
+                                variant={payment.status === 'paid' ? 'secondary' : 'primary'}
                                 onClick={() => void toggleStatus(payment)}
                               >
                                 {payment.status === 'paid' ? 'Marcar pendiente' : 'Marcar pagado'}
@@ -413,7 +413,7 @@ export function AdminPaymentsPage() {
             <Button variant="secondary" fullWidth onClick={() => setEditPayment(null)}>
               Cancelar
             </Button>
-            <Button variant="gold" fullWidth loading={editSaving} onClick={() => void handleSaveEdit()}>
+            <Button variant="primary" fullWidth loading={editSaving} onClick={() => void handleSaveEdit()}>
               Guardar cambios
             </Button>
           </>

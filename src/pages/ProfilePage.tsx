@@ -92,9 +92,9 @@ export function ProfilePage() {
             {user?.email && (
               <p className="text-sm break-all text-ink-muted">{user.email}</p>
             )}
-            {effectiveIsAdmin && <Badge tone="gold">Entrenadora</Badge>}
+            {effectiveIsAdmin && <Badge tone="lime">Entrenadora</Badge>}
             {!effectiveIsAdmin && profile && (
-              <Badge tone={isPro ? 'gold' : 'neutral'}>
+              <Badge tone={isPro ? 'lime' : 'neutral'}>
                 {isPro ? 'Plan Pro' : 'Plan Basic'}
               </Badge>
             )}
@@ -103,7 +103,7 @@ export function ProfilePage() {
             Editar perfil
           </Button>
           {!effectiveIsAdmin && (
-            <Button variant="gold" fullWidth onClick={() => navigate('/chat')}>
+            <Button variant="primary" fullWidth onClick={() => navigate('/chat')}>
               Contactar con Merche
             </Button>
           )}
@@ -119,7 +119,7 @@ export function ProfilePage() {
             <p className="text-sm leading-relaxed text-ink-muted">
               Crea clases, pasa lista y entrega recompensas a tu comunidad.
             </p>
-            <Button variant="gold" fullWidth onClick={() => navigate('/gestion')}>
+            <Button variant="primary" fullWidth onClick={() => navigate('/gestion')}>
               Ir al panel de gestión
             </Button>
           </Card>

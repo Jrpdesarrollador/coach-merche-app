@@ -193,7 +193,7 @@ export function HomePage() {
                 <p className="mt-1 font-display text-base text-ink">Información y contacto</p>
                 <p className="mt-1 text-sm text-ink-muted">WhatsApp, FAQ y más</p>
               </div>
-              <span className="text-gold">→</span>
+              <span className="text-lime">→</span>
             </Card>
           </>
         )}

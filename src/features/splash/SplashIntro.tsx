@@ -5,7 +5,7 @@ import {
   INTRO_TOTAL_MS,
   INTRO_SEEN_STORAGE_KEY,
   INTRO_SKIP_DELAY_MS,
-  LOGO_GREEN_SRC,
+  LOGO_SRC,
 } from '@/features/splash/constants'
 import './splash-intro.css'
 
@@ -50,7 +50,7 @@ export function SplashIntro({ onComplete }: SplashIntroProps) {
     }
 
     void preloadImage(AVATAR_SRC)
-    void preloadImage(LOGO_GREEN_SRC)
+    void preloadImage(LOGO_SRC)
 
     const logoTimer = window.setTimeout(() => setPhase('logo'), INTRO_PHASE_MS.avatar)
     const doneTimer = window.setTimeout(finish, INTRO_TOTAL_MS)
@@ -95,7 +95,7 @@ export function SplashIntro({ onComplete }: SplashIntroProps) {
           <div className="splash-intro__glow" aria-hidden="true" />
           <img
             className="splash-intro__logo"
-            src={LOGO_GREEN_SRC}
+            src={LOGO_SRC}
             width={1024}
             height={1024}
             alt="Logo Coach Merche"

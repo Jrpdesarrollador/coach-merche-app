@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/utils/cn'
 
-type AdminMetricTone = 'default' | 'lime' | 'gold' | 'danger' | 'warning'
+type AdminMetricTone = 'default' | 'lime' | 'danger' | 'warning'
 
 interface AdminMetricCardProps {
   icon: ReactNode
@@ -16,7 +16,6 @@ interface AdminMetricCardProps {
 const toneClasses: Record<AdminMetricTone, string> = {
   default: 'text-ink',
   lime: 'text-lime',
-  gold: 'text-gold',
   danger: 'text-danger',
   warning: 'text-warning',
 }
@@ -55,7 +54,7 @@ export function AdminMetricCard({
     return (
       <Link
         to={to}
-        className={cn(className, 'block hover:border-line-gold hover:from-surface-elevated')}
+        className={cn(className, 'block hover:border-line-lime hover:from-surface-elevated')}
       >
         {content}
       </Link>

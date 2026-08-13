@@ -324,7 +324,7 @@ export function AdminUsersPage() {
                         Aprobar Basic
                       </Button>
                       <Button
-                        variant="gold"
+                        variant="primary"
                         loading={acting === user.id}
                         onClick={() => void handleApprove(user.id, 'pro')}
                       >
@@ -392,13 +392,13 @@ export function AdminUsersPage() {
                         </button>
 
                         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                          <Badge tone={isPro ? 'gold' : 'neutral'}>{tierLabels[tier]}</Badge>
+                          <Badge tone={isPro ? 'lime' : 'neutral'}>{tierLabels[tier]}</Badge>
                           <Button size="sm" variant="secondary" onClick={() => openEdit(user)}>
                             Editar
                           </Button>
                           {!isPro ? (
                             <Button
-                              variant="gold"
+                              variant="primary"
                               size="sm"
                               loading={acting === user.id}
                               onClick={() => {
@@ -440,7 +440,7 @@ export function AdminUsersPage() {
                               <p className="text-[10px] text-ink-muted">Pagado</p>
                             </div>
                             <div className="rounded-xl border border-line/70 p-2.5 text-center">
-                              <p className="font-display text-lg font-black text-gold">
+                              <p className="font-display text-lg font-black text-lime">
                                 {balanceLabel(balance)}
                               </p>
                               <p className="text-[10px] text-ink-muted">Saldo 7 €</p>
@@ -484,7 +484,7 @@ export function AdminUsersPage() {
       <button
         type="button"
         onClick={openCreateModal}
-        className="fixed right-4 bottom-[calc(5.75rem+var(--safe-bottom))] z-30 flex min-h-14 items-center gap-2 rounded-full border border-gold bg-gold px-5 text-sm font-black text-black shadow-premium transition-transform hover:scale-105 sm:bottom-8 sm:right-[max(1rem,calc((100vw-64rem)/2+1rem))]"
+        className="fixed right-4 bottom-[calc(5.75rem+var(--safe-bottom))] z-30 flex min-h-14 items-center gap-2 rounded-full border border-lime bg-lime px-5 text-sm font-black text-black shadow-premium transition-transform hover:scale-105 sm:bottom-8 sm:right-[max(1rem,calc((100vw-64rem)/2+1rem))]"
         aria-label="Nueva alumna"
       >
         <span className="text-lg">+</span>
@@ -500,7 +500,7 @@ export function AdminUsersPage() {
             <Button variant="secondary" fullWidth onClick={closeCreateModal}>
               Cancelar
             </Button>
-            <Button variant="gold" fullWidth loading={creating} onClick={() => void handleCreateManual()}>
+            <Button variant="primary" fullWidth loading={creating} onClick={() => void handleCreateManual()}>
               Crear alumna
             </Button>
           </>
@@ -550,7 +550,7 @@ export function AdminUsersPage() {
             <Button variant="secondary" fullWidth onClick={() => setEditUser(null)}>
               Cancelar
             </Button>
-            <Button variant="gold" fullWidth loading={editSaving} onClick={() => void handleSaveEdit()}>
+            <Button variant="primary" fullWidth loading={editSaving} onClick={() => void handleSaveEdit()}>
               Guardar
             </Button>
           </>
@@ -596,7 +596,7 @@ export function AdminUsersPage() {
               Cancelar
             </Button>
             <Button
-              variant="gold"
+              variant="primary"
               fullWidth
               loading={acting === tierModal?.user.id}
               onClick={() => void handleTierChange()}

@@ -15,7 +15,7 @@ export function AdminLayout() {
     <div className="flex min-h-svh flex-col bg-bg-primary">
       <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 pt-[var(--safe-top)] sm:px-6">
         <div className="shrink-0 print:hidden">
-          <header className="mb-2 flex items-center justify-between gap-3 border-b border-line-gold/40 pb-2">
+          <header className="mb-2 flex items-center justify-between gap-3 border-b border-line-lime/40 pb-2">
             <div className="flex min-w-0 items-center gap-2">
               <IconButton
                 label="Volver a la app"
@@ -25,7 +25,7 @@ export function AdminLayout() {
               />
               <Logo size="sm" decorative />
               <div className="min-w-0">
-                <p className="truncate font-display text-sm tracking-[0.14em] text-gold uppercase">
+                <p className="truncate font-display text-sm tracking-[0.14em] text-lime uppercase">
                   Coach Merche
                 </p>
                 <p className="truncate text-[10px] tracking-[0.12em] text-ink-muted uppercase">

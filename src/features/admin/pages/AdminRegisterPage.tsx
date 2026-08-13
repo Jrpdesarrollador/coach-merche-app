@@ -180,7 +180,7 @@ export function AdminRegisterPage() {
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="rounded-[18px] border border-line-gold/50 bg-green-deep/40 px-4 py-4 text-center">
+      <div className="rounded-[18px] border border-line-lime/50 bg-green-deep/40 px-4 py-4 text-center">
         <p className="text-[10px] font-black tracking-[0.14em] text-lime uppercase">Registro del día</p>
         <p className="mt-1 font-display text-2xl capitalize text-ink sm:text-3xl">
           {formatDateLabel(attDate)}
@@ -189,7 +189,7 @@ export function AdminRegisterPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5">
-        <AdminMetricCard icon="💶" value={formatCurrency(metrics.collected)} label="Total cobrado" tone="gold" />
+        <AdminMetricCard icon="💶" value={formatCurrency(metrics.collected)} label="Total cobrado" tone="lime" />
         <AdminMetricCard icon="🎟️" value={metrics.credits} label="Clases a favor" tone="lime" />
         <AdminMetricCard icon="🏋️" value={metrics.attended} label="Asistencias" />
         <AdminMetricCard
@@ -230,7 +230,7 @@ export function AdminRegisterPage() {
                           'flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors',
                           checked
                             ? 'border-lime bg-lime/10'
-                            : 'border-line hover:border-line-gold',
+                            : 'border-line hover:border-line-lime',
                         )}
                       >
                         <input
@@ -250,7 +250,7 @@ export function AdminRegisterPage() {
                 })}
               </ul>
             )}
-            <Button variant="gold" size="lg" loading={savingAtt} onClick={() => void handleSaveAttendance()}>
+            <Button variant="primary" size="lg" loading={savingAtt} onClick={() => void handleSaveAttendance()}>
               Guardar asistencia ({selectedAtt.length})
             </Button>
           </div>
@@ -282,8 +282,8 @@ export function AdminRegisterPage() {
                     className={cn(
                       'flex min-h-16 flex-col items-center justify-center rounded-xl border px-2 py-2 transition-colors',
                       active
-                        ? 'border-gold bg-gold/15 text-gold'
-                        : 'border-line bg-surface hover:border-line-gold',
+                        ? 'border-lime bg-lime/15 text-lime'
+                        : 'border-line bg-surface hover:border-line-lime',
                     )}
                   >
                     <span className="font-display text-xl font-black">{preset.label}</span>
@@ -318,7 +318,7 @@ export function AdminRegisterPage() {
               rows={2}
               placeholder="Ej.: efectivo, Bizum…"
             />
-            <Button variant="gold" size="lg" loading={savingPay} onClick={() => void handleSavePayment()}>
+            <Button variant="primary" size="lg" loading={savingPay} onClick={() => void handleSavePayment()}>
               Guardar pago
             </Button>
           </div>

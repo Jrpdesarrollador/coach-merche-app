@@ -98,7 +98,7 @@ export function AdminClassDetailPage() {
     <section className="flex flex-col gap-4">
       <Link
         to="/gestion/clases"
-        className="inline-flex items-center gap-1 text-sm font-medium text-ink-muted hover:text-gold"
+        className="inline-flex items-center gap-1 text-sm font-medium text-ink-muted hover:text-lime"
       >
         <ChevronLeftIcon width={16} height={16} />
         Volver a clases
@@ -125,7 +125,7 @@ export function AdminClassDetailPage() {
             className="flex-1"
           />
           <Button
-            variant="gold"
+            variant="primary"
             loading={assigning}
             disabled={availableStudents.length === 0}
             onClick={() => void handleAssign()}
@@ -138,7 +138,7 @@ export function AdminClassDetailPage() {
       <Card highlight>
         <div className="mb-3 flex items-center justify-between">
           <p className="font-display text-lg text-ink">Participantes</p>
-          <Badge tone="gold">{participants.length} apuntadas</Badge>
+          <Badge tone="lime">{participants.length} apuntadas</Badge>
         </div>
 
         {participants.length === 0 ? (

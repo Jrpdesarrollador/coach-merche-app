@@ -3,15 +3,14 @@ import { cn } from '@/utils/cn'
 
 const actions = [
   { to: '/gestion/usuarios?nueva=1', label: 'Alumna', icon: '👤', accent: 'lime' as const },
-  { to: '/gestion/registrar?tab=pago', label: 'Pago', icon: '💶', accent: 'gold' as const },
+  { to: '/gestion/registrar?tab=pago', label: 'Pago', icon: '💶', accent: 'lime' as const },
   { to: '/gestion/clases', label: 'Clase hoy', icon: '📅', accent: 'default' as const },
   { to: '/gestion/registrar', label: 'Asistencia', icon: '✓', accent: 'default' as const },
 ] as const
 
 const accentClasses = {
   lime: 'border-line-olive bg-green-deep/80 hover:border-lime',
-  gold: 'border-line-gold/60 bg-gold/10 hover:border-gold',
-  default: 'border-line bg-surface hover:border-line-gold',
+  default: 'border-line bg-surface hover:border-line-lime',
 }
 
 /** Accesos rápidos a tareas diarias de Merche. */

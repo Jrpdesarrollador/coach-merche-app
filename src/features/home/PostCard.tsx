@@ -86,7 +86,7 @@ export function PostCard({ post }: PostCardProps) {
       {excerpt && (
         <p className="line-clamp-3 text-sm leading-relaxed text-ink-soft">{excerpt}</p>
       )}
-      <p className="text-xs font-medium text-gold">Ver publicación completa</p>
+      <p className="text-xs font-medium text-lime">Ver publicación completa</p>
     </Card>
   )
 }

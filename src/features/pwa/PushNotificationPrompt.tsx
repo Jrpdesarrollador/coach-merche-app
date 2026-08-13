@@ -26,7 +26,7 @@ export function PushNotificationPrompt() {
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-line-gold bg-gold/10 text-gold">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-line-lime bg-lime/10 text-lime">
           <BellIcon width={20} height={20} />
         </div>
         <div className="min-w-0 flex-1">
@@ -48,7 +48,7 @@ export function PushNotificationPrompt() {
       </div>
 
       <Button
-        variant={subscribed ? 'secondary' : 'gold'}
+        variant={subscribed ? 'secondary' : 'primary'}
         fullWidth
         loading={loading}
         disabled={isDenied}

@@ -1,8 +1,7 @@
 export const INTRO_SEEN_STORAGE_KEY = 'coach-merche-intro-seen'
 
 export const AVATAR_SRC = '/assets/brand/coach-avatar-intro.png'
-/** Green logo — splash intro only; app chrome keeps the gold logo. */
-export const LOGO_GREEN_SRC = '/assets/brand/logo-coach-merche-green.png'
+export { LOGO_SRC } from '@/components/brand/Logo'
 
 /** Timeline total duration (ms): avatar 1s + logo bounce/zoom 2s. */
 export const INTRO_TOTAL_MS = 3000

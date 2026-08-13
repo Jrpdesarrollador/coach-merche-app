@@ -12,8 +12,8 @@ const statusLabels = {
 const statusTones = {
   locked: 'neutral',
   unlocked: 'lime',
-  pending_delivery: 'gold',
-  delivered: 'gold',
+  pending_delivery: 'lime',
+  delivered: 'lime',
 } as const
 
 const typeLabels = {
@@ -43,7 +43,7 @@ export function RewardCard({ reward, workoutCount }: RewardCardProps) {
       {reward.status !== 'locked' && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--brand-gold),transparent)]"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--brand-lime),transparent)]"
         />
       )}
 
@@ -53,7 +53,7 @@ export function RewardCard({ reward, workoutCount }: RewardCardProps) {
             'flex size-14 shrink-0 items-center justify-center rounded-2xl border text-2xl',
             isLocked
               ? 'border-line bg-surface-elevated grayscale'
-              : 'border-line-gold bg-gold/10',
+              : 'border-line-lime bg-lime/10',
           )}
           aria-hidden
         >
@@ -91,7 +91,7 @@ export function RewardCard({ reward, workoutCount }: RewardCardProps) {
           )}
 
           {reward.status === 'pending_delivery' && (
-            <p className="mt-2 text-xs text-gold">
+            <p className="mt-2 text-xs text-lime">
               Merche te la entregará en la próxima clase. ¡Enhorabuena!
             </p>
           )}
@@ -125,7 +125,7 @@ export function RewardsHero({
   const remaining = nextRewardRequired ? Math.max(nextRewardRequired - workoutCount, 0) : 0
 
   return (
-    <Card highlight className="flex flex-col gap-4 bg-[linear-gradient(160deg,rgba(214,175,86,0.12),rgba(10,10,10,0.2))]">
+    <Card highlight className="flex flex-col gap-4 bg-[linear-gradient(160deg,rgba(174,212,25,0.12),rgba(10,10,10,0.2))]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <CardLabel>Tu camino</CardLabel>
@@ -136,8 +136,8 @@ export function RewardsHero({
               : 'Has desbloqueado todas las recompensas activas. ¡Eres una leyenda!'}
           </p>
         </div>
-        <div className="rounded-2xl border border-line-gold bg-gold/10 px-3 py-2 text-center">
-          <p className="font-display text-2xl font-black text-gold">{unlockedCount}</p>
+        <div className="rounded-2xl border border-line-lime bg-lime/10 px-3 py-2 text-center">
+          <p className="font-display text-2xl font-black text-lime">{unlockedCount}</p>
           <p className="text-[10px] tracking-wide text-ink-muted uppercase">de {totalRewards}</p>
         </div>
       </div>

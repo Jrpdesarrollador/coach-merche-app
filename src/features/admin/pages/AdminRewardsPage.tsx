@@ -53,7 +53,7 @@ export function AdminRewardsPage() {
       description="Marca como entregadas las recompensas físicas cuando se las des a tus alumnas."
       actions={
         pending.length > 0 ? (
-          <Badge tone="gold">
+          <Badge tone="lime">
             {pending.length} pendiente{pending.length !== 1 ? 's' : ''}
           </Badge>
         ) : null
@@ -87,7 +87,7 @@ export function AdminRewardsPage() {
                     </div>
                   </div>
                   <Button
-                    variant="gold"
+                    variant="primary"
                     size="sm"
                     loading={acting === row.userRewardId}
                     onClick={() =>

@@ -47,7 +47,7 @@ export function AdminReportsPage() {
           Se descargarán 4 archivos CSV: usuarios, reservas, pagos y asistencias del periodo
           seleccionado.
         </p>
-        <Button variant="gold" loading={exporting} onClick={() => void handleExport()}>
+        <Button variant="primary" loading={exporting} onClick={() => void handleExport()}>
           Descargar informes CSV
         </Button>
       </Card>

@@ -45,7 +45,7 @@ export function InfoPage() {
             href={CONTACT.instagramUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full max-w-[12rem] overflow-hidden rounded-xl border border-line-gold bg-white p-3 transition-[border-color,transform] duration-150 hover:border-lime active:scale-[0.98]"
+            className="block w-full max-w-[12rem] overflow-hidden rounded-xl border border-line-lime bg-white p-3 transition-[border-color,transform] duration-150 hover:border-lime active:scale-[0.98]"
           >
             <img
               src={INSTAGRAM_QR_SRC}
@@ -55,7 +55,7 @@ export function InfoPage() {
           </a>
           <p className="text-sm text-ink-soft">
             Escanea o pulsa para abrir{' '}
-            <span className="font-semibold text-gold">{CONTACT.instagramHandle}</span>
+            <span className="font-semibold text-lime">{CONTACT.instagramHandle}</span>
           </p>
         </Card>
 

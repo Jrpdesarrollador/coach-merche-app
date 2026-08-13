@@ -30,7 +30,7 @@ export default defineConfig({
             urlPattern: ({ url }) => url.pathname.startsWith('/assets/'),
             handler: 'CacheFirst',
             options: {
-              cacheName: 'coach-merche-assets',
+              cacheName: 'coach-merche-assets-v2',
               expiration: {
                 maxEntries: 64,
                 maxAgeSeconds: 60 * 60 * 24 * 30,

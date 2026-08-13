@@ -95,7 +95,7 @@ export function AdminWorkoutsPage() {
           <p className="font-display text-lg text-ink">Entrenamientos en vídeo</p>
           <p className="text-xs text-ink-muted">Solo visible para alumnas Pro.</p>
         </div>
-        <Button variant="gold" onClick={() => setShowUpload((prev) => !prev)}>
+        <Button variant="primary" onClick={() => setShowUpload((prev) => !prev)}>
           {showUpload ? 'Cerrar formulario' : '+ Subir vídeo nuevo'}
         </Button>
       </div>
@@ -140,7 +140,7 @@ export function AdminWorkoutsPage() {
                 onChange={(event) => setVideoFile(event.target.files?.[0] ?? null)}
               />
             </div>
-            <Button variant="gold" size="lg" loading={saving} onClick={() => void handlePublish()}>
+            <Button variant="primary" size="lg" loading={saving} onClick={() => void handlePublish()}>
               Publicar entrenamiento
             </Button>
           </Card>
@@ -161,7 +161,7 @@ export function AdminWorkoutsPage() {
           <ul className="flex flex-col gap-2">
             {published.map((workout) => (
               <li key={workout.id}>
-                <Card className="flex items-center justify-between gap-3 transition-colors hover:border-line-gold">
+                <Card className="flex items-center justify-between gap-3 transition-colors hover:border-line-lime">
                   <div className="min-w-0">
                     <p className="truncate font-medium text-ink">{workout.title}</p>
                     <p className="text-xs text-ink-muted">
@@ -198,7 +198,7 @@ export function AdminWorkoutsPage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <Badge tone="neutral">Oculto</Badge>
-                    <Button variant="gold" size="sm" onClick={() => void toggleActive(workout)}>
+                    <Button variant="primary" size="sm" onClick={() => void toggleActive(workout)}>
                       Publicar
                     </Button>
                   </div>

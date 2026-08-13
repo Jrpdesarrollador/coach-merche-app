@@ -49,7 +49,7 @@ function AdminClassesListView() {
       {classes.map(({ class: cls, workout, availability }) => (
         <li key={cls.id}>
           <Link to={`/gestion/clases/${cls.id}`}>
-            <Card className="transition-colors hover:border-line-gold">
+            <Card className="transition-colors hover:border-line-lime">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-display text-lg text-ink">{workout.title}</p>

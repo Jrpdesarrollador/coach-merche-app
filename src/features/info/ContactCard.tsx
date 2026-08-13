@@ -22,11 +22,11 @@ export function ContactCard({
       target={external ? '_blank' : undefined}
       rel={external ? 'noopener noreferrer' : undefined}
       className={cn(
-        'flex min-h-[4.5rem] items-center gap-4 rounded-xl border border-line-gold bg-[linear-gradient(135deg,rgba(214,175,86,0.08),rgba(174,212,25,0.05))] p-4',
+        'flex min-h-[4.5rem] items-center gap-4 rounded-xl border border-line-lime bg-[linear-gradient(135deg,rgba(174,212,25,0.08),rgba(174,212,25,0.05))] p-4',
         'transition-[border-color,transform] duration-150 active:scale-[0.98] hover:border-lime',
       )}
     >
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-line-gold bg-gold/10 text-gold">
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-line-lime bg-lime/10 text-lime">
         {icon}
       </span>
       <span className="min-w-0 flex-1">

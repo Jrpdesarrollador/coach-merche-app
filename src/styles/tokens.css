@@ -7,21 +7,19 @@
 
   /*
    * Brand
-   * El dorado y el olivo salen del logo oficial 1024x1024 (aro exterior y trazo
-   * de la "M" para el dorado, aro interior para el olivo). El lima sale de los
-   * carteles, donde es el color de acento de titulares y llamadas a la accion.
+   * El lima (#aed419) es el acento principal del logo oficial verde y de los
+   * carteles (titulares y llamadas a la accion). El olivo del aro interior del
+   * logo se usa en decoracion (filetes, separadores, superficies).
    *
-   * Contraste sobre #0a0a0a: lima 11.5:1 y dorado 9.6:1 valen para texto pequeno
-   * y para fondo de boton primario con texto negro. El olivo del aro se queda en
-   * 3.4:1, asi que es SOLO decorativo (filetes, separadores, superficies): para
-   * texto sobre fondo oscuro se usa el lima, y sobre olivo se usa el blanco roto.
+   * Contraste sobre #0a0a0a: lima 11.5:1 vale para texto pequeno y para fondo
+   * de boton primario con texto negro. El olivo se queda en 3.4:1, asi que es
+   * SOLO decorativo: para texto sobre fondo oscuro se usa el lima.
    */
   --brand-black: #0a0a0a;
   --brand-charcoal: #141414;
   --brand-green-deep: #1c1e06;
   --brand-olive: #68691e;
   --brand-lime: #aed419;
-  --brand-gold: #d6af56;
   --brand-white: #ffffff;
   --brand-off-white: #f4f4f1;
 
@@ -38,7 +36,6 @@
   /* Borders */
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(174, 212, 25, 0.35);
-  --border-gold: rgba(214, 175, 86, 0.45);
   --border-olive: rgba(104, 105, 30, 0.6);
 
   /* Radii */
@@ -79,7 +76,6 @@
   --color-surface-elevated: #1f1f1f;
 
   --color-lime: #aed419;
-  --color-gold: #d6af56;
   --color-olive: #68691e;
   --color-green-deep: #1c1e06;
 
@@ -93,7 +89,6 @@
 
   --color-line: rgba(255, 255, 255, 0.08);
   --color-line-lime: rgba(174, 212, 25, 0.35);
-  --color-line-gold: rgba(214, 175, 86, 0.45);
   --color-line-olive: rgba(104, 105, 30, 0.6);
 
   --font-display: 'Syne', system-ui, sans-serif;

@@ -17,7 +17,9 @@ const sizeClasses: Record<LogoSize, string> = {
   lg: 'size-28',
 }
 
-export const LOGO_SRC = '/assets/brand/logo-coach-merche.png'
+/** Cache-bust para evitar logo dorado en service worker / CDN. */
+export const LOGO_VERSION = '2'
+export const LOGO_SRC = `/assets/brand/logo-coach-merche.png?v=${LOGO_VERSION}`
 
 export function Logo({
   size = 'md',

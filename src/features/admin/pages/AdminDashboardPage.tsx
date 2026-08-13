@@ -66,7 +66,7 @@ export function AdminDashboardPage() {
 
   return (
     <>
-      <div className="rounded-[18px] border border-line-gold/50 bg-green-deep/40 px-4 py-3">
+      <div className="rounded-[18px] border border-line-lime/50 bg-green-deep/40 px-4 py-3">
         <p className="text-[10px] font-black tracking-[0.14em] text-lime uppercase">Hoy</p>
         <p className="mt-0.5 font-display text-xl capitalize text-ink">{formatTodayLabel()}</p>
       </div>
@@ -88,7 +88,7 @@ export function AdminDashboardPage() {
           icon="📌"
           value={pendingPayments}
           label="Pagos pendientes"
-          tone="gold"
+          tone="lime"
           to="/gestion/pagos"
           hint="Cuotas por cobrar"
         />
@@ -155,7 +155,7 @@ export function AdminDashboardPage() {
                 <li key={cls.id}>
                   <Link
                     to={`/gestion/clases/${cls.id}`}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-line px-3.5 py-3.5 transition-colors hover:border-line-gold hover:bg-surface-elevated"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-line px-3.5 py-3.5 transition-colors hover:border-line-lime hover:bg-surface-elevated"
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -166,7 +166,7 @@ export function AdminDashboardPage() {
                         {formatClassDate(cls.date)} · {formatClassTime(cls.start_time)}
                       </p>
                     </div>
-                    <Badge tone="gold">
+                    <Badge tone="lime">
                       {availability?.booked_count ?? 0}/{cls.capacity}
                     </Badge>
                   </Link>

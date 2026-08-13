@@ -34,7 +34,7 @@ export function WorkoutCard({ workout }: WorkoutCardProps) {
         {workout.duration_minutes && (
           <Badge tone="neutral">{workout.duration_minutes} min</Badge>
         )}
-        {workout.category && <Badge tone="gold">{workout.category}</Badge>}
+        {workout.category && <Badge tone="lime">{workout.category}</Badge>}
       </div>
       {workout.description && (
         <p className="line-clamp-2 text-sm text-ink-soft">{workout.description}</p>

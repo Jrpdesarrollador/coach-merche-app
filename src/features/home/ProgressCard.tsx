@@ -40,7 +40,7 @@ export function ProgressCard({
       <CardLabel>Tu progreso</CardLabel>
       <div className="flex items-end justify-between gap-3">
         <CardTitle className="text-3xl">{countLabel}</CardTitle>
-        <TrophyIcon width={26} height={26} className="text-gold" />
+        <TrophyIcon width={26} height={26} className="text-lime" />
       </div>
       <ProgressBar
         value={workoutCount}

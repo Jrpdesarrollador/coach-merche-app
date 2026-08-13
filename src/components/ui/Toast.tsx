@@ -14,7 +14,7 @@ const TOAST_DURATION_MS = 3200
 const toneStyles: Record<ToastTone, string> = {
   success: 'border-line-lime text-lime',
   error: 'border-danger/40 text-danger',
-  reward: 'border-line-gold text-gold',
+  reward: 'border-line-lime text-lime',
 }
 
 const toneIcons: Record<ToastTone, ReactNode> = {

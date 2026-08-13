@@ -37,7 +37,7 @@ export function DesignSystemPage() {
           <div className="flex flex-wrap gap-2">
             <Button>Apuntarme</Button>
             <Button variant="secondary">Secundario</Button>
-            <Button variant="gold">Premium</Button>
+            <Button variant="primary">Premium</Button>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="ghost" size="sm">
@@ -63,10 +63,10 @@ export function DesignSystemPage() {
           <Card highlight className="flex flex-col gap-2">
             <CardLabel>Próxima clase</CardLabel>
             <CardTitle className="text-2xl">FULL BODY</CardTitle>
-            <p className="text-sm text-ink-soft">Jueves 13 · 20:00 · Urbanización</p>
+            <p className="text-sm text-ink-soft">Jueves 13 · 19:00 · Box Coach Merche</p>
             <div className="flex items-center gap-2">
               <Badge tone="lime">10 / 12 plazas</Badge>
-              <Badge tone="gold">Destacada</Badge>
+              <Badge tone="lime">Destacada</Badge>
               <Badge tone="danger">Completa</Badge>
             </div>
             <Button fullWidth>Apuntarme</Button>
@@ -150,7 +150,7 @@ export function DesignSystemPage() {
             </Button>
             <Button
               size="sm"
-              variant="gold"
+              variant="primary"
               onClick={() => showToast('Recompensa desbloqueada: IMPARABLE', 'reward')}
             >
               Toast logro
@@ -206,7 +206,7 @@ export function DesignSystemPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-[0.7rem] font-semibold tracking-[0.18em] text-gold uppercase">
+      <h2 className="text-[0.7rem] font-semibold tracking-[0.18em] text-lime uppercase">
         {title}
       </h2>
       {children}

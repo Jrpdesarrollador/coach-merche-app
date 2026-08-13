@@ -141,7 +141,7 @@ export function AdminChatPage() {
                   rows={2}
                   className="flex-1"
                 />
-                <Button variant="gold" loading={sending} onClick={() => void handleSend()}>
+                <Button variant="primary" loading={sending} onClick={() => void handleSend()}>
                   Enviar
                 </Button>
               </div>

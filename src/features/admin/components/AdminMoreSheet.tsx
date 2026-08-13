@@ -72,7 +72,7 @@ export function AdminMoreSheet({ open, onClose }: AdminMoreSheetProps) {
                           'flex min-h-12 items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors',
                           isActive
                             ? 'border-lime bg-lime/10 text-lime'
-                            : 'border-line bg-surface text-ink-soft hover:border-line-gold',
+                            : 'border-line bg-surface text-ink-soft hover:border-line-lime',
                         )
                       }
                     >

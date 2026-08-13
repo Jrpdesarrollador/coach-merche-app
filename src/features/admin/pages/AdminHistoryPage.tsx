@@ -34,9 +34,9 @@ const kindLabels: Record<HistoryEntryKind, string> = {
   booking: 'Reservó sola',
 }
 
-const kindTones: Record<HistoryEntryKind, 'lime' | 'gold' | 'neutral' | 'warning'> = {
+const kindTones: Record<HistoryEntryKind, 'lime' | 'neutral' | 'warning'> = {
   manual_payment: 'lime',
-  monthly_payment: 'gold',
+  monthly_payment: 'lime',
   manual_attendance: 'neutral',
   booking: 'warning',
 }
@@ -90,7 +90,7 @@ function TimelineRow({
           <span
             className={cn(
               'font-black whitespace-nowrap',
-              entry.amountCents >= 0 ? 'text-lime' : 'text-gold',
+              entry.amountCents >= 0 ? 'text-lime' : 'text-warning',
             )}
           >
             {formatCurrencySigned(entry.amountCents)}
@@ -355,7 +355,7 @@ export function AdminHistoryPage() {
             <p className="text-[11px] text-ink-muted">Pagos manuales</p>
           </Card>
           <Card className="p-3 text-center">
-            <p className="font-display text-xl font-black text-gold">{stats.attendances}</p>
+            <p className="font-display text-xl font-black text-lime">{stats.attendances}</p>
             <p className="text-[11px] text-ink-muted">Asistencias</p>
           </Card>
           <Card className="p-3 text-center">
@@ -411,7 +411,7 @@ export function AdminHistoryPage() {
             <Button variant="secondary" fullWidth onClick={() => setEditPayment(null)}>
               Cancelar
             </Button>
-            <Button variant="gold" fullWidth loading={editSaving} onClick={() => void handleSavePaymentEdit()}>
+            <Button variant="primary" fullWidth loading={editSaving} onClick={() => void handleSavePaymentEdit()}>
               Guardar cambios
             </Button>
           </>
@@ -455,7 +455,7 @@ export function AdminHistoryPage() {
               Cancelar
             </Button>
             <Button
-              variant="gold"
+              variant="primary"
               fullWidth
               loading={editSaving}
               onClick={() => void handleSaveAttendanceEdit()}

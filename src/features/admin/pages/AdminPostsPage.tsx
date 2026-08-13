@@ -227,7 +227,7 @@ export function AdminPostsPage() {
 
           {(previewUrl || existingImageUrl || (editingPost?.media_type === 'video' && !clearMedia)) && (
             <div className="overflow-hidden rounded-xl border border-line bg-surface-elevated">
-              <p className="border-b border-line px-3 py-2 text-xs font-semibold tracking-wide text-gold uppercase">
+              <p className="border-b border-line px-3 py-2 text-xs font-semibold tracking-wide text-lime uppercase">
                 Vista previa
               </p>
               {previewUrl && previewMediaType === 'video' && (
@@ -279,7 +279,7 @@ export function AdminPostsPage() {
                 Cancelar
               </Button>
             )}
-            <Button variant="gold" loading={saving} onClick={() => void handlePublish()}>
+            <Button variant="primary" loading={saving} onClick={() => void handlePublish()}>
               {editingPost ? 'Guardar y publicar' : 'Publicar'}
             </Button>
           </div>

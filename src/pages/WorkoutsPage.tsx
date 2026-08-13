@@ -54,9 +54,9 @@ export function WorkoutsPage() {
       <>
         <TopBar title="Entrenamientos" />
         <section className="flex flex-col gap-4 pt-2">
-          <Card className="flex flex-col items-center gap-4 border-line-gold/60 text-center">
-            <Badge tone="gold">Plan Pro</Badge>
-            <DumbbellIcon width={36} height={36} className="text-gold" />
+          <Card className="flex flex-col items-center gap-4 border-line-lime/60 text-center">
+            <Badge tone="lime">Plan Pro</Badge>
+            <DumbbellIcon width={36} height={36} className="text-lime" />
             <div>
               <h2 className="font-display text-xl text-ink">Entrenamientos en vídeo</h2>
               <p className="mt-2 text-sm leading-relaxed text-ink-muted">
@@ -65,10 +65,10 @@ export function WorkoutsPage() {
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
-              <span className="rounded-full border border-line-gold bg-green-deep/80 px-4 py-2 text-sm">
+              <span className="rounded-full border border-line-lime bg-green-deep/80 px-4 py-2 text-sm">
                 <b className="text-lime">{PRO_PRICING.monthly}</b>
               </span>
-              <span className="rounded-full border border-line-gold bg-green-deep/80 px-4 py-2 text-sm">
+              <span className="rounded-full border border-line-lime bg-green-deep/80 px-4 py-2 text-sm">
                 <b className="text-lime">{PRO_PRICING.yearly}</b>
               </span>
             </div>
@@ -76,7 +76,7 @@ export function WorkoutsPage() {
               Merche activará tu suscripción Pro desde el panel de gestión. Próximamente podrás
               suscribirte online (Stripe, Fase 15).
             </p>
-            <Button variant="gold" disabled>
+            <Button variant="primary" disabled>
               Contacta con Merche para activar Pro
             </Button>
           </Card>

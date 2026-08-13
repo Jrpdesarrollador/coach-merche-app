@@ -24,7 +24,7 @@ export function ProgressBar({ value, max, label, className }: ProgressBarProps) 
       )}
     >
       <div
-        className="h-full rounded-full bg-[linear-gradient(90deg,var(--brand-lime),var(--brand-gold))] transition-[width] duration-500 ease-out"
+        className="h-full rounded-full bg-[linear-gradient(90deg,var(--brand-lime),var(--brand-olive))] transition-[width] duration-500 ease-out"
         style={{ width: `${percent}%` }}
       />
     </div>

@@ -117,14 +117,14 @@ export function AdminNotificationsPage() {
           <div className="flex gap-2">
             <Button
               size="sm"
-              variant={target === 'all' ? 'gold' : 'secondary'}
+              variant={target === 'all' ? 'primary' : 'secondary'}
               onClick={() => setTarget('all')}
             >
               Todas
             </Button>
             <Button
               size="sm"
-              variant={target === 'selected' ? 'gold' : 'secondary'}
+              variant={target === 'selected' ? 'primary' : 'secondary'}
               onClick={() => setTarget('selected')}
             >
               Seleccionadas
@@ -140,7 +140,7 @@ export function AdminNotificationsPage() {
                     <label
                       className={cn(
                         'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-surface-elevated',
-                        checked && 'bg-gold/8',
+                        checked && 'bg-lime/8',
                       )}
                     >
                       <input
@@ -157,7 +157,7 @@ export function AdminNotificationsPage() {
             </ul>
           )}
 
-          <Button variant="gold" loading={sending} onClick={() => void handleSend()}>
+          <Button variant="primary" loading={sending} onClick={() => void handleSend()}>
             Enviar aviso
           </Button>
         </div>

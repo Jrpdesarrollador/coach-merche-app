@@ -20,7 +20,7 @@ export function ViewModeSwitcher() {
         aria-label="Modo de vista"
       >
         <Button
-          variant={viewMode === 'admin' ? 'gold' : 'ghost'}
+          variant={viewMode === 'admin' ? 'primary' : 'ghost'}
           size="sm"
           fullWidth
           aria-pressed={viewMode === 'admin'}

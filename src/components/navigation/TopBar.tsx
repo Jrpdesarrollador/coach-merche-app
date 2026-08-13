@@ -29,7 +29,7 @@ export function TopBar({ title, showBack = false, action }: TopBarProps) {
         ) : (
           <div className="flex min-w-0 items-center gap-2">
             <Logo size="md" decorative priority />
-            <span className="font-display text-sm tracking-[0.22em] text-gold uppercase">
+            <span className="font-display text-sm tracking-[0.22em] text-lime uppercase">
               Coach Merche
             </span>
           </div>
