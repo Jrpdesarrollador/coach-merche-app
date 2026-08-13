@@ -8,9 +8,9 @@ import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const sourcePath = path.join(rootDir, 'public/assets/brand/logo-coach-merche.png')
 const backupPath = path.join(rootDir, 'public/assets/brand/logo-coach-merche-gold-backup.png')
-const outputPath = path.join(rootDir, 'public/assets/brand/logo-coach-merche-green-tmp.png')
+const outputPath = path.join(rootDir, 'public/assets/brand/logo-coach-merche.png')
+const legacyPath = path.join(rootDir, 'public/assets/brand/logo-coach-merche-green.png')
 
 const TARGET = { r: 174, g: 212, b: 25 }
 
@@ -68,31 +68,24 @@ function recolorPixel(r, g, b) {
   if (s < 0.08) return { r, g, b }
 
   const hueDeg = h * 360
-  const isGold =
-    hueDeg >= 25 &&
-    hueDeg <= 75 &&
-    s >= 0.12 &&
-    l >= 0.08 &&
+  const isBrandMetal =
+    hueDeg >= 15 &&
+    hueDeg <= 95 &&
+    s >= 0.1 &&
+    l >= 0.06 &&
     luminance < 245
 
-  if (!isGold) return { r, g, b }
+  if (!isBrandMetal) return { r, g, b }
 
   const targetHue = rgbToHsl(TARGET.r, TARGET.g, TARGET.b).h
-  const next = hslToRgb(targetHue, Math.min(1, s * 1.05), l)
+  const next = hslToRgb(targetHue, Math.min(1, s * 1.35), l)
   return next
 }
 
-await access(sourcePath)
-await mkdir(path.dirname(backupPath), { recursive: true })
+await access(backupPath)
+await mkdir(path.dirname(outputPath), { recursive: true })
 
-try {
-  await access(backupPath)
-} catch {
-  await copyFile(sourcePath, backupPath)
-  console.log('✓ Backup dorado guardado en logo-coach-merche-gold-backup.png')
-}
-
-const { data, info } = await sharp(sourcePath)
+const { data, info } = await sharp(backupPath)
   .ensureAlpha()
   .raw()
   .toBuffer({ resolveWithObject: true })
@@ -113,7 +106,7 @@ await sharp(data, {
   .png()
   .toFile(outputPath)
 
-await copyFile(outputPath, sourcePath)
+await copyFile(outputPath, legacyPath)
 
 const sample = await sharp(outputPath).resize(100, 100).raw().toBuffer({ resolveWithObject: true })
 let sr = 0
