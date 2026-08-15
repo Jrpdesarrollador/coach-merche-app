@@ -3,7 +3,7 @@ import { PosterImage } from '@/components/brand'
 import { Badge, Button, Card, EmptyState, Input, Skeleton, Textarea } from '@/components/ui'
 import { AdminSection } from '@/features/admin/components/AdminSection'
 import { useToast } from '@/hooks/useToast'
-import { postsService, toFriendlyMessage } from '@/services'
+import { postsService, toFriendlyMessage, type PublishPostNotificationResult } from '@/services'
 import type { Post, PostMediaType } from '@/types'
 import { formatShortDate } from '@/utils/datetime'
 
@@ -13,23 +13,34 @@ function mediaLabel(type: PostMediaType): string {
   return 'Solo texto'
 }
 
-function notificationToastMessage(
-  count: number,
-  pushSent = 0,
-  emailsSent = 0,
-): string {
-  if (count === 0) return 'Publicación guardada'
-  const audience =
-    count === 1 ? '1 alumna' : `${count} alumnas`
+function notificationFollowUpMessage(result: PublishPostNotificationResult): string | null {
+  if (result.failed) {
+    return 'Avisos extra (email/push) no enviados. La novedad sí está visible en la app.'
+  }
+  if (result.alreadySent) return null
+
+  const { recipientCount: count, pushSent, emailsSent } = result
+  if (count === 0) return null
+
+  const audience = count === 1 ? '1 alumna' : `${count} alumnas`
   const channels: string[] = []
   if (emailsSent > 0) channels.push(`${emailsSent} email${emailsSent === 1 ? '' : 's'}`)
   if (pushSent > 0) channels.push(`${pushSent} push`)
   if (channels.length) {
-    return `Enviado a ${audience} (${channels.join(' · ')})`
+    return `Avisos enviados a ${audience} (${channels.join(' · ')})`
   }
   return count === 1
-    ? 'Publicación enviada a 1 alumna (in-app)'
-    : `Publicación enviada a ${count} alumnas (in-app)`
+    ? 'Aviso in-app enviado a 1 alumna'
+    : `Avisos in-app enviados a ${count} alumnas`
+}
+
+async function sendPostNotifications(
+  postId: string,
+  showToast: (message: string, tone?: 'success' | 'error' | 'reward') => void,
+) {
+  const result = await postsService.publishPostNotifications(postId)
+  const followUp = notificationFollowUpMessage(result)
+  if (followUp) showToast(followUp)
 }
 
 export function AdminPostsPage() {
@@ -141,24 +152,14 @@ export function AdminPostsPage() {
 
       if (editingPost) {
         savedPost = await postsService.updatePost(editingPost.id, payload)
+        showToast(shouldNotify ? 'Publicación creada' : 'Publicación actualizada')
         if (shouldNotify) {
-          const result = await postsService.publishPostNotifications(savedPost.id)
-          showToast(
-            notificationToastMessage(
-              result.recipientCount,
-              result.pushSent,
-              result.emailsSent,
-            ),
-          )
-        } else {
-          showToast('Publicación actualizada')
+          await sendPostNotifications(savedPost.id, showToast)
         }
       } else {
         savedPost = await postsService.createPost(payload)
-        const result = await postsService.publishPostNotifications(savedPost.id)
-        showToast(
-          notificationToastMessage(result.recipientCount, result.pushSent, result.emailsSent),
-        )
+        showToast('Publicación creada')
+        await sendPostNotifications(savedPost.id, showToast)
       }
 
       resetForm()
@@ -180,10 +181,8 @@ export function AdminPostsPage() {
           published: true,
           published_at: new Date().toISOString(),
         })
-        const result = await postsService.publishPostNotifications(post.id)
-        showToast(
-          notificationToastMessage(result.recipientCount, result.pushSent, result.emailsSent),
-        )
+        showToast('Publicación creada')
+        await sendPostNotifications(post.id, showToast)
       }
       await reload()
     } catch (error) {

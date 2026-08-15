@@ -11,6 +11,8 @@ export interface PublishPostNotificationResult {
   alreadySent: boolean
   pushSent: number
   emailsSent: number
+  /** true when email/push delivery failed; the post itself is still published */
+  failed: boolean
 }
 
 const IMAGE_BUCKET = 'posts'
@@ -197,50 +199,89 @@ async function deletePost(post: Post): Promise<void> {
   if (error) throw serviceError(error)
 }
 
+const EMPTY_NOTIFICATION_RESULT: PublishPostNotificationResult = {
+  recipientCount: 0,
+  alreadySent: false,
+  pushSent: 0,
+  emailsSent: 0,
+  failed: false,
+}
+
 /** Envía email + push tras publicar. Los avisos in-app los crea el trigger SQL. */
 async function publishPostNotifications(postId: string): Promise<PublishPostNotificationResult> {
   if (!isSupabaseConfigured) {
-    throw serviceError(new Error('Supabase no configurado'))
+    return { ...EMPTY_NOTIFICATION_RESULT, failed: true }
   }
 
-  const { data: prep, error: prepError } = await supabase.rpc('publish_post_notifications', {
-    p_post_id: postId,
-  })
+  try {
+    const { data: prep, error: prepError } = await supabase.rpc('publish_post_notifications', {
+      p_post_id: postId,
+    })
 
-  if (prepError) throw serviceError(prepError)
-
-  const prepRow = prep as {
-    already_sent?: boolean
-    recipient_count?: number
-  } | null
-
-  if (prepRow?.already_sent) {
-    return {
-      recipientCount: prepRow.recipient_count ?? 0,
-      alreadySent: true,
-      pushSent: 0,
-      emailsSent: 0,
+    if (prepError) {
+      console.warn('[posts] publish_post_notifications failed', prepError)
+      return { ...EMPTY_NOTIFICATION_RESULT, failed: true }
     }
-  }
 
-  const { data, error } = await supabase.functions.invoke('notify-new-post', {
-    body: { post_id: postId },
-  })
+    const prepRow = prep as {
+      already_sent?: boolean
+      recipient_count?: number
+    } | null
 
-  if (error) throw serviceError(error)
+    if (prepRow?.already_sent) {
+      return {
+        recipientCount: prepRow.recipient_count ?? 0,
+        alreadySent: true,
+        pushSent: 0,
+        emailsSent: 0,
+        failed: false,
+      }
+    }
 
-  const result = data as {
-    already_sent?: boolean
-    recipient_count?: number
-    push?: { sent?: number }
-    email?: { sent?: number }
-  } | null
+    const { data, error } = await supabase.functions.invoke('notify-new-post', {
+      body: { post_id: postId },
+    })
 
-  return {
-    recipientCount: result?.recipient_count ?? prepRow?.recipient_count ?? 0,
-    alreadySent: Boolean(result?.already_sent),
-    pushSent: result?.push?.sent ?? 0,
-    emailsSent: result?.email?.sent ?? 0,
+    if (error) {
+      console.warn('[posts] notify-new-post failed', error)
+      return {
+        recipientCount: prepRow?.recipient_count ?? 0,
+        alreadySent: false,
+        pushSent: 0,
+        emailsSent: 0,
+        failed: true,
+      }
+    }
+
+    const result = data as {
+      ok?: boolean
+      already_sent?: boolean
+      recipient_count?: number
+      push?: { sent?: number }
+      email?: { sent?: number }
+    } | null
+
+    if (result?.ok === false) {
+      console.warn('[posts] notify-new-post returned error', result)
+      return {
+        recipientCount: prepRow?.recipient_count ?? 0,
+        alreadySent: false,
+        pushSent: 0,
+        emailsSent: 0,
+        failed: true,
+      }
+    }
+
+    return {
+      recipientCount: result?.recipient_count ?? prepRow?.recipient_count ?? 0,
+      alreadySent: Boolean(result?.already_sent),
+      pushSent: result?.push?.sent ?? 0,
+      emailsSent: result?.email?.sent ?? 0,
+      failed: false,
+    }
+  } catch (error) {
+    console.warn('[posts] publishPostNotifications unexpected error', error)
+    return { ...EMPTY_NOTIFICATION_RESULT, failed: true }
   }
 }
 
