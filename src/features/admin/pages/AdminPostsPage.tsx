@@ -17,64 +17,56 @@ function notificationFollowUpMessage(result: PublishPostNotificationResult): {
   message: string
   tone: 'success' | 'error'
 } | null {
-  if (result.alreadySent) return null
-
-  if (result.failed && result.failureReason) {
-    return { message: result.failureReason, tone: 'error' }
-  }
-
-  if (result.failed) {
+  if (result.alreadySent) {
     return {
-      message: 'Avisos extra (email/push) no enviados. La novedad sí está visible en la app.',
+      message: result.failureReason ?? 'Los avisos push/email ya se enviaron. Usa «Reenviar avisos».',
       tone: 'error',
     }
   }
 
-  const { recipientCount: count, pushSent, emailsSent, pushAttempted } = result
-  if (count === 0) {
-    return {
-      message:
-        'Publicado, pero no hay destinatarias (alumnas aprobadas ni admins). Los avisos in-app no se crearán.',
-      tone: 'error',
-    }
-  }
-
-  const audience = count === 1 ? '1 persona' : `${count} personas`
   const channels: string[] = []
-  if (emailsSent > 0) channels.push(`${emailsSent} email${emailsSent === 1 ? '' : 's'}`)
-  if (pushSent > 0) channels.push(`${pushSent} push`)
+  if (result.emailsSent > 0) channels.push(`${result.emailsSent} email${result.emailsSent === 1 ? '' : 's'}`)
+  if (result.pushSent > 0) channels.push(`${result.pushSent} push`)
+
   if (channels.length) {
+    const audience =
+      result.recipientCount === 1 ? '1 persona' : `${result.recipientCount} personas`
+    if (result.failed && result.failureReason) {
+      return {
+        message: `Parcial: ${channels.join(' · ')}. ${result.failureReason}`,
+        tone: 'error',
+      }
+    }
     return {
       message: `Avisos enviados a ${audience} (${channels.join(' · ')})`,
       tone: 'success',
     }
   }
 
-  if (pushAttempted === 0 && !result.vapidConfigured) {
-    return {
-      message: `Aviso in-app enviado a ${audience}. Push no configurado (VAPID).`,
-      tone: 'success',
-    }
+  if (result.failed && result.failureReason) {
+    return { message: result.failureReason, tone: 'error' }
   }
 
-  if (pushAttempted === 0) {
+  if (result.recipientCount === 0) {
     return {
-      message: `Aviso in-app enviado a ${audience}. Push: ninguna suscripción activa (activar en Perfil → vista alumna).`,
-      tone: 'success',
+      message:
+        'Publicado, pero no hay destinatarias (alumnas aprobadas ni admins).',
+      tone: 'error',
     }
   }
 
   return {
-    message: count === 1 ? 'Aviso in-app enviado a 1 persona' : `Avisos in-app enviados a ${audience}`,
-    tone: 'success',
+    message: 'Aviso in-app enviado. Push/email no se entregaron — revisa la configuración.',
+    tone: 'error',
   }
 }
 
 async function sendPostNotifications(
   postId: string,
   showToast: (message: string, tone?: 'success' | 'error' | 'reward') => void,
+  options?: { force?: boolean },
 ) {
-  const result = await postsService.publishPostNotifications(postId)
+  const result = await postsService.publishPostNotifications(postId, options)
   const followUp = notificationFollowUpMessage(result)
   if (followUp) showToast(followUp.message, followUp.tone)
 }
@@ -90,6 +82,7 @@ export function AdminPostsPage() {
   const [mediaFile, setMediaFile] = useState<File | null>(null)
   const [editingPost, setEditingPost] = useState<Post | null>(null)
   const [clearMedia, setClearMedia] = useState(false)
+  const [resendingId, setResendingId] = useState<string | null>(null)
 
   const previewUrl = useMemo(
     () => (mediaFile ? URL.createObjectURL(mediaFile) : null),
@@ -223,6 +216,17 @@ export function AdminPostsPage() {
       await reload()
     } catch (error) {
       showToast(toFriendlyMessage(error), 'error')
+    }
+  }
+
+  async function handleResendNotifications(post: Post) {
+    setResendingId(post.id)
+    try {
+      await sendPostNotifications(post.id, showToast, { force: true })
+    } catch (error) {
+      showToast(toFriendlyMessage(error), 'error')
+    } finally {
+      setResendingId(null)
     }
   }
 
@@ -392,6 +396,16 @@ export function AdminPostsPage() {
                       <Button variant="secondary" size="sm" onClick={() => void handleTogglePublish(post)}>
                         {post.published ? 'Despublicar' : 'Publicar'}
                       </Button>
+                      {post.published && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          loading={resendingId === post.id}
+                          onClick={() => void handleResendNotifications(post)}
+                        >
+                          Reenviar avisos
+                        </Button>
+                      )}
                       <Button variant="danger" size="sm" onClick={() => void handleDelete(post)}>
                         Eliminar
                       </Button>

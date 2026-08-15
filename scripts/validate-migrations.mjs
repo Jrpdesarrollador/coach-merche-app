@@ -619,6 +619,24 @@ async function runSmokeTests(db) {
     JSON.stringify(publishAgain.rows[0]?.data),
   )
 
+  await signInAs(MERCHE)
+  const resetNotifications = await db.query(`
+    select public.reset_post_notifications('${notifyPostId}') as ok
+  `)
+  check(
+    'reset_post_notifications permite reintentar avisos',
+    resetNotifications.rows[0]?.ok === true,
+  )
+
+  const publishAfterReset = await db.query(`
+    select public.publish_post_notifications('${notifyPostId}') as data
+  `)
+  check(
+    'Tras reset, publish_post_notifications vuelve a permitir envío',
+    publishAfterReset.rows[0]?.data?.already_sent === false,
+    JSON.stringify(publishAfterReset.rows[0]?.data),
+  )
+
   // ---- Notificaciones y pagos -------------------------------------------
   await signInAs(ANA)
   const anaPaymentsInsert = await expectFailure(

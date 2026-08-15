@@ -77,17 +77,18 @@ Ver también [pwa-push.md](./pwa-push.md).
 ### Email (Resend)
 
 1. Crea cuenta en [Resend](https://resend.com).
-2. Verifica tu dominio (o usa el sandbox `onboarding@resend.dev` para pruebas).
+2. **Sandbox:** en Resend → **Emails**, verifica cada destinatario (p. ej. `jrodriguezpomeda@gmail.com`). Sin verificación, Resend rechaza el envío.
 3. Crea API key con permiso de envío.
-4. Configura secrets:
+4. Configura secrets (PowerShell — comillas simples por fuera):
 
-```bash
+```powershell
 supabase secrets set RESEND_API_KEY=re_xxxxxxxx
-# PowerShell: usa comillas simples por fuera para que < > no se interpreten
-supabase secrets set FROM_EMAIL='Coach Merche <noreply@tudominio.com>'
-# Bash / macOS:
-# supabase secrets set FROM_EMAIL="Coach Merche <noreply@tudominio.com>"
+supabase secrets set FROM_EMAIL='Coach Merche <onboarding@resend.dev>'
+# Producción con dominio verificado:
+# supabase secrets set FROM_EMAIL='Coach Merche <noreply@tudominio.com>'
 ```
+
+Si `FROM_EMAIL` falló al configurarlo, la función usa `onboarding@resend.dev` por defecto (solo a emails verificados en Resend).
 
 Sin `RESEND_API_KEY`, la función responde OK pero no envía correos (modo stub).
 

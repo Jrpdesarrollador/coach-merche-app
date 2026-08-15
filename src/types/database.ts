@@ -475,6 +475,10 @@ export interface Database {
         Args: { p_post_id: string }
         Returns: boolean
       }
+      reset_post_notifications: {
+        Args: { p_post_id: string }
+        Returns: boolean
+      }
       upsert_push_subscription: {
         Args: { p_endpoint: string; p_keys: Record<string, string> }
         Returns: Database['public']['Tables']['push_subscriptions']['Row']

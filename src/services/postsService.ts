@@ -15,10 +15,14 @@ export interface PublishPostNotificationResult {
   emailsAttempted: number
   emailsFailed: number
   pushFailed: number
+  pushSubscriptionCount: number
   vapidConfigured: boolean
   resendConfigured: boolean
+  markedSent: boolean
   note?: string
+  deliverySummary?: string
   emailErrors?: string[]
+  pushErrors?: string[]
   /** true when email/push delivery failed; the post itself is still published */
   failed: boolean
   /** Human-readable reason when failed or partially delivered */
@@ -218,18 +222,27 @@ const EMPTY_NOTIFICATION_RESULT: PublishPostNotificationResult = {
   emailsAttempted: 0,
   emailsFailed: 0,
   pushFailed: 0,
+  pushSubscriptionCount: 0,
   vapidConfigured: false,
   resendConfigured: false,
+  markedSent: false,
   failed: false,
 }
 
 /** Envía email + push tras publicar. Los avisos in-app los crea el trigger SQL. */
-async function publishPostNotifications(postId: string): Promise<PublishPostNotificationResult> {
+async function publishPostNotifications(
+  postId: string,
+  options?: { force?: boolean },
+): Promise<PublishPostNotificationResult> {
   if (!isSupabaseConfigured) {
     return { ...EMPTY_NOTIFICATION_RESULT, failed: true }
   }
 
   try {
+    if (options?.force) {
+      await supabase.rpc('reset_post_notifications', { p_post_id: postId })
+    }
+
     const { data: prep, error: prepError } = await supabase.rpc('publish_post_notifications', {
       p_post_id: postId,
     })
@@ -253,7 +266,7 @@ async function publishPostNotifications(postId: string): Promise<PublishPostNoti
     }
 
     const { data, error } = await supabase.functions.invoke('notify-new-post', {
-      body: { post_id: postId },
+      body: { post_id: postId, force: options?.force ?? false },
     })
 
     if (error) {
@@ -270,17 +283,38 @@ async function publishPostNotifications(postId: string): Promise<PublishPostNoti
       ok?: boolean
       already_sent?: boolean
       recipient_count?: number
-      push?: { attempted?: number; sent?: number; failed?: number; vapid_configured?: boolean }
+      marked_sent?: boolean
+      delivery_summary?: string
+      push?: {
+        attempted?: number
+        sent?: number
+        failed?: number
+        skipped_no_vapid?: boolean
+        vapid_configured?: boolean
+        subscription_count?: number
+        errors?: string[]
+      }
       email?: {
         attempted?: number
         sent?: number
         failed?: number
+        skipped?: number
         resend_configured?: boolean
       }
-      note?: string
       email_errors?: string[]
+      push_errors?: string[]
       error?: string
     } | null
+
+    if (result?.already_sent) {
+      return {
+        ...EMPTY_NOTIFICATION_RESULT,
+        recipientCount: prepRow?.recipient_count ?? 0,
+        alreadySent: true,
+        failureReason: result.delivery_summary ?? 'Los avisos push/email ya se enviaron. Usa «Reenviar avisos».',
+        failed: true,
+      }
+    }
 
     if (result?.ok === false) {
       console.warn('[posts] notify-new-post returned error', result)
@@ -295,46 +329,45 @@ async function publishPostNotifications(postId: string): Promise<PublishPostNoti
     const pushAttempted = result?.push?.attempted ?? 0
     const pushSent = result?.push?.sent ?? 0
     const pushFailed = result?.push?.failed ?? 0
+    const pushSubscriptionCount = result?.push?.subscription_count ?? 0
     const emailsAttempted = result?.email?.attempted ?? 0
     const emailsSent = result?.email?.sent ?? 0
     const emailsFailed = result?.email?.failed ?? 0
     const vapidConfigured = result?.push?.vapid_configured ?? false
     const resendConfigured = result?.email?.resend_configured ?? false
     const emailErrors = result?.email_errors
-
-    let failureReason: string | undefined
-    if (!vapidConfigured && !resendConfigured) {
-      failureReason = 'Push y email no configurados en Supabase (VAPID / RESEND_API_KEY).'
-    } else if (emailsFailed > 0) {
-      failureReason =
-        emailErrors?.[0] ??
-        `${emailsFailed} email${emailsFailed === 1 ? '' : 's'} no enviado${emailsFailed === 1 ? '' : 's'}.`
-    } else if (pushAttempted > 0 && pushSent === 0 && pushFailed > 0) {
-      failureReason = 'Push falló para todas las suscripciones activas.'
-    } else if (pushAttempted === 0 && emailsAttempted > 0 && emailsSent === 0 && resendConfigured) {
-      failureReason = 'Email configurado pero ningún envío completado (¿email verificado en Resend?).'
-    } else if (result?.note) {
-      failureReason = result.note
-    }
+    const pushErrors = result?.push_errors
+    const deliverySummary = result?.delivery_summary
+    const markedSent = result?.marked_sent ?? false
 
     const deliveryFailed =
-      Boolean(failureReason) ||
-      emailsFailed > 0 ||
-      (pushAttempted > 0 && pushSent === 0 && pushFailed > 0)
+      pushSent === 0 &&
+      emailsSent === 0 &&
+      (pushAttempted > 0 || emailsAttempted > 0 || Boolean(deliverySummary))
+
+    let failureReason = deliverySummary
+    if (!failureReason && emailsFailed > 0) {
+      failureReason = emailErrors?.[0] ?? `${emailsFailed} email(s) no enviados.`
+    } else if (!failureReason && pushAttempted > 0 && pushSent === 0) {
+      failureReason = pushErrors?.[0] ?? 'Push no entregado a ningún dispositivo.'
+    }
 
     return {
       recipientCount: result?.recipient_count ?? prepRow?.recipient_count ?? 0,
-      alreadySent: Boolean(result?.already_sent),
+      alreadySent: false,
       pushSent,
       emailsSent,
       pushAttempted,
       emailsAttempted,
       emailsFailed,
       pushFailed,
+      pushSubscriptionCount,
       vapidConfigured,
       resendConfigured,
-      note: result?.note,
+      markedSent,
+      deliverySummary,
       emailErrors,
+      pushErrors,
       failed: deliveryFailed,
       failureReason,
     }
