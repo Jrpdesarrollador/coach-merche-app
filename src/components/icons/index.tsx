@@ -126,6 +126,15 @@ export function PinIcon(props: IconProps) {
   )
 }
 
+export function NewspaperIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M5 5.5h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1z" />
+      <path d="M7 9.5h10M7 13h6M7 16.5h8" />
+    </svg>
+  )
+}
+
 export function BellIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

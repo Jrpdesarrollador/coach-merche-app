@@ -26,6 +26,7 @@ import { HomePage } from '@/pages/HomePage'
 import { InfoPage } from '@/pages/InfoPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { NovedadesPage } from '@/pages/NovedadesPage'
 import { PostDetailPage } from '@/pages/PostDetailPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { RegisterPage } from '@/pages/RegisterPage'
@@ -53,6 +54,7 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route index element={<HomePage />} />
+            <Route path="novedades" element={<NovedadesPage />} />
             <Route path="novedades/:id" element={<PostDetailPage />} />
             <Route path="informacion" element={<InfoPage />} />
             <Route path="clases" element={<ClassesPage />} />

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TopBar } from '@/components/navigation/TopBar'
 import { NotificationBell } from '@/features/notifications'
@@ -17,7 +17,9 @@ import { PushNotificationPrompt } from '@/features/pwa'
 import { validateName } from '@/features/auth/validation'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
-import { profileService, toFriendlyMessage } from '@/services'
+import { LatestPostPreview } from '@/features/novedades'
+import { profileService, postsService, toFriendlyMessage } from '@/services'
+import type { Post } from '@/types'
 
 const EDIT_FORM_ID = 'profile-edit-form'
 
@@ -33,8 +35,32 @@ export function ProfilePage() {
   const [nameError, setNameError] = useState<string | undefined>(undefined)
   const [saving, setSaving] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
+  const [latestPost, setLatestPost] = useState<Post | null>(null)
+  const [latestPostLoading, setLatestPostLoading] = useState(true)
 
   const displayName = profile?.name ?? 'Tu perfil'
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadLatestPost() {
+      setLatestPostLoading(true)
+      try {
+        const post = await postsService.getLatestPublished()
+        if (!cancelled) setLatestPost(post)
+      } catch {
+        if (!cancelled) setLatestPost(null)
+      } finally {
+        if (!cancelled) setLatestPostLoading(false)
+      }
+    }
+
+    void loadLatestPost()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function openEditor() {
     setName(profile?.name ?? '')
@@ -110,6 +136,8 @@ export function ProfilePage() {
         </Card>
 
         <ViewModeSwitcher />
+
+        <LatestPostPreview post={latestPost} loading={latestPostLoading} />
 
         {!effectiveIsAdmin && <PushNotificationPrompt />}
 

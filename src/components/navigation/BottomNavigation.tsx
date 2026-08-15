@@ -3,6 +3,7 @@ import {
   CalendarIcon,
   DumbbellIcon,
   HomeIcon,
+  NewspaperIcon,
   TrophyIcon,
   UserIcon,
 } from '@/components/icons'
@@ -11,6 +12,7 @@ import { cn } from '@/utils/cn'
 
 const destinations = [
   { to: '/', label: 'Inicio', Icon: HomeIcon, locked: false },
+  { to: '/novedades', label: 'Novedades', Icon: NewspaperIcon, locked: false },
   { to: '/clases', label: 'Clases', Icon: CalendarIcon, locked: false },
   { to: '/entrenamientos', label: 'Entrenos', Icon: DumbbellIcon, locked: true },
   { to: '/recompensas', label: 'Logros', Icon: TrophyIcon, locked: false },
