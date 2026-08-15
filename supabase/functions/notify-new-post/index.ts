@@ -5,7 +5,8 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
-import { buildPostEmailHtml, postDetailUrl, postExcerpt } from '../_shared/post-content.ts'
+import { buildPostEmailHtml, newPostEmailSubject, postExcerpt } from '../_shared/post-content.ts'
+import { buildNewPostPush } from '../_shared/push-messages.ts'
 import { isVapidConfigured, sendWebPushBatch, type PushSubscriptionRow } from '../_shared/web-push.ts'
 
 interface NotifyPayload {
@@ -89,7 +90,7 @@ async function sendEmails(
       body: JSON.stringify({
         from: fromEmail,
         to: [recipient.email],
-        subject: input.title,
+        subject: newPostEmailSubject(input.title),
         html,
       }),
     })
@@ -161,7 +162,11 @@ Deno.serve(async (request) => {
     const approvedIds = (approvedProfiles ?? []).map((row) => row.id)
     const title = post.title
     const excerpt = postExcerpt(post.content)
-    const url = postDetailUrl(post.id)
+    const pushPayload = buildNewPostPush({
+      postId: post.id,
+      title,
+      excerpt,
+    })
 
     let subscriptions: PushSubscriptionRow[] = []
     if (approvedIds.length) {
@@ -176,7 +181,7 @@ Deno.serve(async (request) => {
 
     const pushResult = await sendWebPushBatch(
       subscriptions,
-      { title, body: excerpt, url },
+      pushPayload,
       async (subscriptionId) => {
         await supabase.from('push_subscriptions').delete().eq('id', subscriptionId)
       },

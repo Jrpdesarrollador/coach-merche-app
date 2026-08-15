@@ -5,7 +5,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
-import { buildPostEmailHtml } from '../_shared/post-content.ts'
+import { buildPostEmailHtml, newPostEmailSubject } from '../_shared/post-content.ts'
 
 interface EmailPayload {
   post_id: string
@@ -36,12 +36,12 @@ async function sendWithResend(input: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      from: fromEmail,
-      to: [input.to],
-      subject: input.subject,
-      html: input.html,
-    }),
+      body: JSON.stringify({
+        from: fromEmail,
+        to: [input.to],
+        subject: newPostEmailSubject(input.subject),
+        html: input.html,
+      }),
   })
 
   if (!response.ok) {

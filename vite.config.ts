@@ -13,6 +13,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'autoUpdate',
       includeAssets: [
         'assets/icons/pwa-icon-192-green.png',
@@ -20,31 +23,17 @@ export default defineConfig({
         'assets/icons/pwa-icon-maskable-512-green.png',
         'assets/icons/pwa-apple-touch-green.png',
         'assets/brand/logo-coach-merche.png',
+        'assets/brand/logo-coach-merche-green.png',
         'assets/brand/coach-avatar-intro.png',
         'manifest.webmanifest',
       ],
       manifest: false,
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,webp,woff2}'],
-        navigateFallback: '/index.html',
-        skipWaiting: true,
-        clientsClaim: true,
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) => url.pathname.startsWith('/assets/'),
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'coach-merche-assets-v5',
-              expiration: {
-                maxEntries: 64,
-                maxAgeSeconds: 60 * 60 * 24 * 30,
-              },
-            },
-          },
-        ],
       },
       devOptions: {
         enabled: true,
+        type: 'module',
       },
     }),
   ],

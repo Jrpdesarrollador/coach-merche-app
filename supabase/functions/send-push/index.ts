@@ -5,6 +5,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
+import { PWA_BADGE_URL, PWA_ICON_URL } from '../_shared/notification-assets.ts'
 import { isVapidConfigured, sendWebPushBatch, type PushSubscriptionRow } from '../_shared/web-push.ts'
 
 interface PushPayload {
@@ -13,6 +14,7 @@ interface PushPayload {
   title: string
   body: string
   url?: string
+  tag?: string
   approved_only?: boolean
 }
 
@@ -62,7 +64,10 @@ Deno.serve(async (request) => {
       {
         title: payload.title,
         body: payload.body,
-        url: payload.url,
+        url: payload.url ?? '/',
+        icon: PWA_ICON_URL,
+        badge: PWA_BADGE_URL,
+        tag: payload.tag,
       },
       async (subscriptionId) => {
         await supabase.from('push_subscriptions').delete().eq('id', subscriptionId)

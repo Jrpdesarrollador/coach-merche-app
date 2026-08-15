@@ -88,7 +88,11 @@ export function usePushNotifications(): UsePushNotificationsResult {
       setPermission(result)
 
       if (result !== 'granted') {
-        setError('Necesitamos tu permiso para enviarte recordatorios de clase.')
+        setError(
+          result === 'denied'
+            ? 'Has bloqueado las notificaciones. Actívalas en los ajustes del navegador.'
+            : 'Necesitamos tu permiso para enviarte novedades y recordatorios.',
+        )
         return false
       }
 

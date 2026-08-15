@@ -17,39 +17,60 @@ Cuando Merche publica una novedad desde **Gestión → Publicaciones**, la app e
 
 Si `notification_sent_at` ya tiene valor, no se reenvía (evita duplicados). Al **despublicar**, ese campo se limpia para permitir un nuevo envío.
 
+**Fallbacks:** si una alumna no tiene push activado, recibe email e in-app. Si no tiene email, recibe push e in-app. Cada canal es independiente.
+
+## Diseño premium
+
+### Email (Resend)
+
+- Asunto: `✨ Merche ha publicado: {título}`
+- Plantilla HTML responsive: fondo oscuro (#0a0a0a), acentos lime (#aed419), logo verde, botón «Ver en la app»
+- Enlace directo: `https://coach-merche-app.vercel.app/novedades/:id`
+
+### Push (Web Push / PWA)
+
+- Título: `✨ Merche ha publicado algo nuevo`
+- Cuerpo: título de la publicación
+- Icono y badge: logo PWA verde
+- Acción: abre `/novedades/:id`
+- Recordatorios de clase: `💪 Tu clase es mañana` con detalle del entrenamiento
+
 ## Despliegue de Edge Functions
 
 ```bash
 supabase functions deploy notify-new-post
 supabase functions deploy send-push
 supabase functions deploy send-post-email
+supabase functions deploy class-reminders
 ```
 
-`notify-new-post` es la función principal invocada por la app. Las otras dos pueden usarse por separado para pruebas o integraciones futuras.
+`notify-new-post` es la función principal invocada por la app. Las otras pueden usarse por separado para pruebas o cron.
 
 ## Secrets en Supabase
 
-En **Project Settings → Edge Functions → Secrets**:
+En **Project Settings → Edge Functions → Secrets** (proyecto `olcqupciiqaifgybfidf`):
 
 ### Push (Web Push / VAPID)
 
 ```bash
+supabase login
+supabase link --project-ref olcqupciiqaifgybfidf
+
+# Generar par VAPID (copia ambas claves):
+npx web-push generate-vapid-keys
+
 supabase secrets set VAPID_PUBLIC_KEY=tu_clave_publica
 supabase secrets set VAPID_PRIVATE_KEY=tu_clave_privada
 supabase secrets set VAPID_SUBJECT=mailto:merche@tudominio.com
 ```
 
-Generar par VAPID:
-
-```bash
-npx web-push generate-vapid-keys
-```
-
-La clave pública también va en el frontend:
+La clave pública también va en **Vercel** (Environment Variables):
 
 ```env
 VITE_VAPID_PUBLIC_KEY=tu_clave_publica
 ```
+
+Redeploy de Vercel tras añadir la variable.
 
 Ver también [pwa-push.md](./pwa-push.md).
 
@@ -57,7 +78,8 @@ Ver también [pwa-push.md](./pwa-push.md).
 
 1. Crea cuenta en [Resend](https://resend.com).
 2. Verifica tu dominio (o usa el sandbox `onboarding@resend.dev` para pruebas).
-3. Configura secrets:
+3. Crea API key con permiso de envío.
+4. Configura secrets:
 
 ```bash
 supabase secrets set RESEND_API_KEY=re_xxxxxxxx
@@ -66,11 +88,15 @@ supabase secrets set FROM_EMAIL="Coach Merche <noreply@tudominio.com>"
 
 Sin `RESEND_API_KEY`, la función responde OK pero no envía correos (modo stub).
 
-## Contenido del email
+**Sandbox Resend:** solo envía a emails verificados en tu cuenta Resend. Para producción, verifica el dominio.
 
-- **Asunto:** título de la publicación
-- **Cuerpo:** resumen del contenido + botón «Ver en la app»
-- **Enlace:** `https://coach-merche-app.vercel.app/novedades/:id`
+## Activación push (alumna)
+
+1. Inicia sesión como alumna aprobada.
+2. En **Home** aparece un banner «¿Quieres avisos de Merche?» (una vez).
+3. O ve a **Perfil → Activar avisos push**.
+4. Acepta el permiso del navegador.
+5. La suscripción se guarda en `push_subscriptions`.
 
 ## Cómo probar
 
@@ -82,16 +108,17 @@ Sin `RESEND_API_KEY`, la función responde OK pero no envía correos (modo stub)
 
 ### Push
 
-1. Configura VAPID (secrets + `VITE_VAPID_PUBLIC_KEY`).
-2. Como alumna, activa avisos en **Perfil**.
-3. Publica una novedad como admin.
-4. Comprueba la notificación en el dispositivo (PWA instalada o navegador con permiso).
+1. Configura VAPID (secrets Supabase + `VITE_VAPID_PUBLIC_KEY` en Vercel).
+2. Redeploy edge functions y frontend.
+3. Como alumna, activa avisos en Perfil o Home.
+4. Publica una novedad como admin.
+5. Comprueba la notificación en el dispositivo (PWA instalada o navegador con permiso).
 
 ### Email
 
 1. Configura `RESEND_API_KEY` y `FROM_EMAIL`.
 2. Publica una novedad con alumnas aprobadas que tengan email en `auth.users`.
-3. Revisa la bandeja (o el dashboard de Resend).
+3. Revisa la bandeja (o el dashboard de Resend → Logs).
 
 ### Invocación manual de la Edge Function
 

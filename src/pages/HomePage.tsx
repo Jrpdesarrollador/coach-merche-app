@@ -4,6 +4,7 @@ import { CalendarIcon, DumbbellIcon, AlertIcon } from '@/components/icons'
 import { TopBar } from '@/components/navigation/TopBar'
 import { Button, Card, EmptyState } from '@/components/ui'
 import { NotificationBell } from '@/features/notifications'
+import { PushNotificationBanner } from '@/features/pwa'
 import {
   ClassBookingStatus,
   ClassCard,
@@ -78,6 +79,8 @@ export function HomePage() {
           <h1 className="font-display text-3xl text-ink">{greeting}</h1>
           <p className="mt-1 text-sm text-ink-muted">Entrena tu mejor versión</p>
         </div>
+
+        {!effectiveIsAdmin && <PushNotificationBanner />}
 
         {notConfigured && (
           <Card className="border-warning/35 bg-warning/5 text-sm text-ink-soft">

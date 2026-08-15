@@ -16,17 +16,47 @@ npm run icons:generate
 ## Activar avisos push (alumna)
 
 1. Inicia sesión como alumna aprobada (Basic o Pro).
-2. Ve a **Perfil → Activar avisos push**.
-3. Acepta el permiso del navegador.
-4. La suscripción se guarda en `push_subscriptions` vía RPC `upsert_push_subscription`.
+2. En **Home** verás un banner para activar avisos (solo la primera vez).
+3. O ve a **Perfil → Activar avisos push**.
+4. Acepta el permiso del navegador.
+5. La suscripción se guarda en `push_subscriptions` vía RPC `upsert_push_subscription`.
 
-Variable de entorno cliente:
+### Qué recibirás
+
+| Evento | Push | Email |
+|--------|------|-------|
+| Nueva publicación de Merche | ✨ Merche ha publicado algo nuevo | ✨ Merche ha publicado: {título} |
+| Clase en 24 h (si tienes reserva) | 💪 Tu clase es mañana | (futuro) |
+
+### Variables de entorno
+
+**Vercel** (frontend):
 
 ```env
 VITE_VAPID_PUBLIC_KEY=tu_clave_publica_vapid
 ```
 
-Generar par VAPID (ejemplo con `npx web-push generate-vapid-keys`).
+**Supabase** (edge functions):
+
+```bash
+supabase secrets set VAPID_PUBLIC_KEY=tu_clave_publica
+supabase secrets set VAPID_PRIVATE_KEY=tu_clave_privada
+supabase secrets set VAPID_SUBJECT=mailto:merche@tudominio.com
+```
+
+Generar par VAPID:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+## Service Worker
+
+El archivo `src/sw.ts` gestiona:
+
+- Precaching PWA (Workbox)
+- Evento `push` → muestra notificación con icono, badge y vibración
+- Evento `notificationclick` → abre la URL de la novedad o clases
 
 ## Recordatorios 24 h antes de clase
 
@@ -39,13 +69,15 @@ La función SQL `notify_class_reminders()`:
 
 ### Cron en producción
 
-**Opción A — Supabase Edge Function + Cron**
+**Opción A — Supabase Edge Function + Cron (recomendado)**
 
 ```bash
 supabase functions deploy class-reminders
 ```
 
 Programar en Supabase Dashboard → Edge Functions → Cron (diario 08:00 Europe/Madrid).
+
+La función `class-reminders` ya envía push premium a alumnas suscritas tras crear los avisos in-app.
 
 **Opción B — pg_cron** (si está habilitado en el proyecto)
 
@@ -57,17 +89,15 @@ select cron.schedule(
 );
 ```
 
+Con pg_cron solo se crean avisos in-app; para push hay que invocar también `class-reminders` edge function.
+
 **Opción C — Invocación manual (pruebas)**
 
 ```sql
 select public.notify_class_reminders();
 ```
 
-### Push real (pendiente producción)
-
-1. Configura secrets en Supabase: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
-2. Completa `supabase/functions/send-push` con librería `web-push`.
-3. Tras `notify_class_reminders()`, invoca `send-push` para notificaciones con `metadata.push = true`.
+Luego invocar la edge function `class-reminders` para el push.
 
 Los avisos in-app ya funcionan con **NotificationBell** sin configurar push.
 

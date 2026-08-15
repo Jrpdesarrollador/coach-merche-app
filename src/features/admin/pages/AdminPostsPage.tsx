@@ -13,10 +13,23 @@ function mediaLabel(type: PostMediaType): string {
   return 'Solo texto'
 }
 
-function notificationToastMessage(count: number): string {
+function notificationToastMessage(
+  count: number,
+  pushSent = 0,
+  emailsSent = 0,
+): string {
   if (count === 0) return 'Publicación guardada'
-  if (count === 1) return 'Publicación enviada a 1 alumna'
-  return `Publicación enviada a ${count} alumnas`
+  const audience =
+    count === 1 ? '1 alumna' : `${count} alumnas`
+  const channels: string[] = []
+  if (emailsSent > 0) channels.push(`${emailsSent} email${emailsSent === 1 ? '' : 's'}`)
+  if (pushSent > 0) channels.push(`${pushSent} push`)
+  if (channels.length) {
+    return `Enviado a ${audience} (${channels.join(' · ')})`
+  }
+  return count === 1
+    ? 'Publicación enviada a 1 alumna (in-app)'
+    : `Publicación enviada a ${count} alumnas (in-app)`
 }
 
 export function AdminPostsPage() {
@@ -130,14 +143,22 @@ export function AdminPostsPage() {
         savedPost = await postsService.updatePost(editingPost.id, payload)
         if (shouldNotify) {
           const result = await postsService.publishPostNotifications(savedPost.id)
-          showToast(notificationToastMessage(result.recipientCount))
+          showToast(
+            notificationToastMessage(
+              result.recipientCount,
+              result.pushSent,
+              result.emailsSent,
+            ),
+          )
         } else {
           showToast('Publicación actualizada')
         }
       } else {
         savedPost = await postsService.createPost(payload)
         const result = await postsService.publishPostNotifications(savedPost.id)
-        showToast(notificationToastMessage(result.recipientCount))
+        showToast(
+          notificationToastMessage(result.recipientCount, result.pushSent, result.emailsSent),
+        )
       }
 
       resetForm()
@@ -160,7 +181,9 @@ export function AdminPostsPage() {
           published_at: new Date().toISOString(),
         })
         const result = await postsService.publishPostNotifications(post.id)
-        showToast(notificationToastMessage(result.recipientCount))
+        showToast(
+          notificationToastMessage(result.recipientCount, result.pushSent, result.emailsSent),
+        )
       }
       await reload()
     } catch (error) {

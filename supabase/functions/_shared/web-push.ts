@@ -1,4 +1,5 @@
 import webpush from 'npm:web-push@3.6.7'
+import type { RichPushPayload } from './push-messages.ts'
 
 export interface PushSubscriptionRow {
   id: string
@@ -28,7 +29,7 @@ export function isVapidConfigured(): boolean {
 
 export async function sendWebPushBatch(
   subscriptions: PushSubscriptionRow[],
-  payload: { title: string; body: string; url?: string },
+  payload: RichPushPayload,
   onInvalid?: (subscriptionId: string) => Promise<void>,
 ): Promise<PushSendResult> {
   const attempted = subscriptions.length
@@ -52,11 +53,7 @@ export async function sendWebPushBatch(
     Deno.env.get('VAPID_PRIVATE_KEY')!,
   )
 
-  const message = JSON.stringify({
-    title: payload.title,
-    body: payload.body,
-    url: payload.url,
-  })
+  const message = JSON.stringify(payload)
 
   let sent = 0
   let failed = 0
