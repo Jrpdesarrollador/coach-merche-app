@@ -6,6 +6,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
 import { buildPostEmailHtml, newPostEmailSubject, postExcerpt } from '../_shared/post-content.ts'
+import { fetchPostNotificationRecipientIds } from '../_shared/post-recipients.ts'
 import { buildNewPostPush } from '../_shared/push-messages.ts'
 import { isVapidConfigured, sendWebPushBatch, type PushSubscriptionRow } from '../_shared/web-push.ts'
 
@@ -39,19 +40,17 @@ async function verifyAdmin(request: Request): Promise<boolean> {
 async function sendEmails(
   supabase: ReturnType<typeof createClient>,
   input: { postId: string; title: string; excerpt: string },
-): Promise<{ attempted: number; sent: number; skipped: number; failed: number }> {
+): Promise<{
+  attempted: number
+  sent: number
+  skipped: number
+  failed: number
+  errors?: string[]
+}> {
   const apiKey = Deno.env.get('RESEND_API_KEY')
   const fromEmail = Deno.env.get('FROM_EMAIL') ?? 'Coach Merche <onboarding@resend.dev>'
 
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('role', 'user')
-    .eq('approval_status', 'approved')
-
-  if (profilesError) throw profilesError
-
-  const userIds = (profiles ?? []).map((row) => row.id)
+  const userIds = await fetchPostNotificationRecipientIds(supabase)
   if (!userIds.length) {
     return { attempted: 0, sent: 0, skipped: 0, failed: 0 }
   }
@@ -79,6 +78,7 @@ async function sendEmails(
 
   let sent = 0
   let failed = 0
+  const errors: string[] = []
 
   for (const recipient of recipients) {
     const response = await fetch('https://api.resend.com/emails', {
@@ -99,6 +99,8 @@ async function sendEmails(
       sent += 1
     } else {
       failed += 1
+      const detail = await response.text()
+      errors.push(`${recipient.email}: ${detail || response.statusText}`)
     }
   }
 
@@ -107,6 +109,7 @@ async function sendEmails(
     sent,
     skipped: 0,
     failed,
+    errors: errors.length ? errors.slice(0, 5) : undefined,
   }
 }
 
@@ -150,16 +153,8 @@ Deno.serve(async (request) => {
       })
     }
 
-    const { data: approvedProfiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('role', 'user')
-      .eq('approval_status', 'approved')
-
-    if (profilesError) throw profilesError
-
-    const recipientCount = approvedProfiles?.length ?? 0
-    const approvedIds = (approvedProfiles ?? []).map((row) => row.id)
+    const approvedIds = await fetchPostNotificationRecipientIds(supabase)
+    const recipientCount = approvedIds.length
     const title = post.title
     const excerpt = postExcerpt(post.content)
     const pushPayload = buildNewPostPush({
@@ -214,6 +209,7 @@ Deno.serve(async (request) => {
         isVapidConfigured() && Deno.env.get('RESEND_API_KEY')
           ? undefined
           : 'Configura VAPID y/o RESEND_API_KEY para entrega real (ver docs/notifications.md).',
+      email_errors: emailResult.errors,
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'

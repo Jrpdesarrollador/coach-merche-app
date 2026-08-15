@@ -591,8 +591,8 @@ async function runSmokeTests(db) {
       and metadata->>'post_id' = '${notifyPostId}'
   `)
   check(
-    'notify_new_post crea avisos in-app para alumnas aprobadas',
-    newPostNotifications.rows[0].total === 2,
+    'notify_new_post crea avisos in-app para alumnas aprobadas y admins',
+    newPostNotifications.rows[0].total === 3,
     `total=${newPostNotifications.rows[0].total}`,
   )
 
@@ -601,7 +601,7 @@ async function runSmokeTests(db) {
   `)
   check(
     'publish_post_notifications devuelve alumnas destinatarias',
-    publishRpc.rows[0]?.data?.recipient_count === 2 &&
+    publishRpc.rows[0]?.data?.recipient_count === 3 &&
       publishRpc.rows[0]?.data?.already_sent === false,
     JSON.stringify(publishRpc.rows[0]?.data),
   )

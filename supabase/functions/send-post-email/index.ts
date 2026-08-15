@@ -6,6 +6,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
 import { buildPostEmailHtml, newPostEmailSubject } from '../_shared/post-content.ts'
+import { fetchPostNotificationRecipientIds } from '../_shared/post-recipients.ts'
 
 interface EmailPayload {
   post_id: string
@@ -67,15 +68,7 @@ Deno.serve(async (request) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('role', 'user')
-      .eq('approval_status', 'approved')
-
-    if (profilesError) throw profilesError
-
-    const userIds = (profiles ?? []).map((row) => row.id)
+    const userIds = await fetchPostNotificationRecipientIds(supabase)
     if (!userIds.length) {
       return jsonResponse({
         ok: true,

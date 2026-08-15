@@ -6,6 +6,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
 import { PWA_BADGE_URL, PWA_ICON_URL } from '../_shared/notification-assets.ts'
+import { fetchPostNotificationRecipientIds } from '../_shared/post-recipients.ts'
 import { isVapidConfigured, sendWebPushBatch, type PushSubscriptionRow } from '../_shared/web-push.ts'
 
 interface PushPayload {
@@ -47,16 +48,8 @@ Deno.serve(async (request) => {
     let rows = (subscriptions ?? []) as PushSubscriptionRow[]
 
     if (payload.approved_only !== false && !payload.user_id) {
-      const { data: approvedProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('role', 'user')
-        .eq('approval_status', 'approved')
-
-      if (profilesError) throw profilesError
-
-      const approvedIds = new Set((approvedProfiles ?? []).map((row) => row.id))
-      rows = rows.filter((row) => approvedIds.has(row.user_id))
+      const recipientIds = new Set(await fetchPostNotificationRecipientIds(supabase))
+      rows = rows.filter((row) => recipientIds.has(row.user_id))
     }
 
     const result = await sendWebPushBatch(

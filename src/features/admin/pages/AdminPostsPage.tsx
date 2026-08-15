@@ -13,25 +13,61 @@ function mediaLabel(type: PostMediaType): string {
   return 'Solo texto'
 }
 
-function notificationFollowUpMessage(result: PublishPostNotificationResult): string | null {
-  if (result.failed) {
-    return 'Avisos extra (email/push) no enviados. La novedad sí está visible en la app.'
-  }
+function notificationFollowUpMessage(result: PublishPostNotificationResult): {
+  message: string
+  tone: 'success' | 'error'
+} | null {
   if (result.alreadySent) return null
 
-  const { recipientCount: count, pushSent, emailsSent } = result
-  if (count === 0) return null
+  if (result.failed && result.failureReason) {
+    return { message: result.failureReason, tone: 'error' }
+  }
 
-  const audience = count === 1 ? '1 alumna' : `${count} alumnas`
+  if (result.failed) {
+    return {
+      message: 'Avisos extra (email/push) no enviados. La novedad sí está visible en la app.',
+      tone: 'error',
+    }
+  }
+
+  const { recipientCount: count, pushSent, emailsSent, pushAttempted } = result
+  if (count === 0) {
+    return {
+      message:
+        'Publicado, pero no hay destinatarias (alumnas aprobadas ni admins). Los avisos in-app no se crearán.',
+      tone: 'error',
+    }
+  }
+
+  const audience = count === 1 ? '1 persona' : `${count} personas`
   const channels: string[] = []
   if (emailsSent > 0) channels.push(`${emailsSent} email${emailsSent === 1 ? '' : 's'}`)
   if (pushSent > 0) channels.push(`${pushSent} push`)
   if (channels.length) {
-    return `Avisos enviados a ${audience} (${channels.join(' · ')})`
+    return {
+      message: `Avisos enviados a ${audience} (${channels.join(' · ')})`,
+      tone: 'success',
+    }
   }
-  return count === 1
-    ? 'Aviso in-app enviado a 1 alumna'
-    : `Avisos in-app enviados a ${count} alumnas`
+
+  if (pushAttempted === 0 && !result.vapidConfigured) {
+    return {
+      message: `Aviso in-app enviado a ${audience}. Push no configurado (VAPID).`,
+      tone: 'success',
+    }
+  }
+
+  if (pushAttempted === 0) {
+    return {
+      message: `Aviso in-app enviado a ${audience}. Push: ninguna suscripción activa (activar en Perfil → vista alumna).`,
+      tone: 'success',
+    }
+  }
+
+  return {
+    message: count === 1 ? 'Aviso in-app enviado a 1 persona' : `Avisos in-app enviados a ${audience}`,
+    tone: 'success',
+  }
 }
 
 async function sendPostNotifications(
@@ -40,7 +76,7 @@ async function sendPostNotifications(
 ) {
   const result = await postsService.publishPostNotifications(postId)
   const followUp = notificationFollowUpMessage(result)
-  if (followUp) showToast(followUp)
+  if (followUp) showToast(followUp.message, followUp.tone)
 }
 
 export function AdminPostsPage() {

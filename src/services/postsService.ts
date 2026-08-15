@@ -11,8 +11,18 @@ export interface PublishPostNotificationResult {
   alreadySent: boolean
   pushSent: number
   emailsSent: number
+  pushAttempted: number
+  emailsAttempted: number
+  emailsFailed: number
+  pushFailed: number
+  vapidConfigured: boolean
+  resendConfigured: boolean
+  note?: string
+  emailErrors?: string[]
   /** true when email/push delivery failed; the post itself is still published */
   failed: boolean
+  /** Human-readable reason when failed or partially delivered */
+  failureReason?: string
 }
 
 const IMAGE_BUCKET = 'posts'
@@ -204,6 +214,12 @@ const EMPTY_NOTIFICATION_RESULT: PublishPostNotificationResult = {
   alreadySent: false,
   pushSent: 0,
   emailsSent: 0,
+  pushAttempted: 0,
+  emailsAttempted: 0,
+  emailsFailed: 0,
+  pushFailed: 0,
+  vapidConfigured: false,
+  resendConfigured: false,
   failed: false,
 }
 
@@ -230,11 +246,9 @@ async function publishPostNotifications(postId: string): Promise<PublishPostNoti
 
     if (prepRow?.already_sent) {
       return {
+        ...EMPTY_NOTIFICATION_RESULT,
         recipientCount: prepRow.recipient_count ?? 0,
         alreadySent: true,
-        pushSent: 0,
-        emailsSent: 0,
-        failed: false,
       }
     }
 
@@ -245,11 +259,10 @@ async function publishPostNotifications(postId: string): Promise<PublishPostNoti
     if (error) {
       console.warn('[posts] notify-new-post failed', error)
       return {
+        ...EMPTY_NOTIFICATION_RESULT,
         recipientCount: prepRow?.recipient_count ?? 0,
-        alreadySent: false,
-        pushSent: 0,
-        emailsSent: 0,
         failed: true,
+        failureReason: 'No se pudo conectar con el servicio de avisos. Comprueba que las Edge Functions están desplegadas.',
       }
     }
 
@@ -257,27 +270,73 @@ async function publishPostNotifications(postId: string): Promise<PublishPostNoti
       ok?: boolean
       already_sent?: boolean
       recipient_count?: number
-      push?: { sent?: number }
-      email?: { sent?: number }
+      push?: { attempted?: number; sent?: number; failed?: number; vapid_configured?: boolean }
+      email?: {
+        attempted?: number
+        sent?: number
+        failed?: number
+        resend_configured?: boolean
+      }
+      note?: string
+      email_errors?: string[]
+      error?: string
     } | null
 
     if (result?.ok === false) {
       console.warn('[posts] notify-new-post returned error', result)
       return {
+        ...EMPTY_NOTIFICATION_RESULT,
         recipientCount: prepRow?.recipient_count ?? 0,
-        alreadySent: false,
-        pushSent: 0,
-        emailsSent: 0,
         failed: true,
+        failureReason: result.error ?? 'El servicio de avisos devolvió un error.',
       }
     }
+
+    const pushAttempted = result?.push?.attempted ?? 0
+    const pushSent = result?.push?.sent ?? 0
+    const pushFailed = result?.push?.failed ?? 0
+    const emailsAttempted = result?.email?.attempted ?? 0
+    const emailsSent = result?.email?.sent ?? 0
+    const emailsFailed = result?.email?.failed ?? 0
+    const vapidConfigured = result?.push?.vapid_configured ?? false
+    const resendConfigured = result?.email?.resend_configured ?? false
+    const emailErrors = result?.email_errors
+
+    let failureReason: string | undefined
+    if (!vapidConfigured && !resendConfigured) {
+      failureReason = 'Push y email no configurados en Supabase (VAPID / RESEND_API_KEY).'
+    } else if (emailsFailed > 0) {
+      failureReason =
+        emailErrors?.[0] ??
+        `${emailsFailed} email${emailsFailed === 1 ? '' : 's'} no enviado${emailsFailed === 1 ? '' : 's'}.`
+    } else if (pushAttempted > 0 && pushSent === 0 && pushFailed > 0) {
+      failureReason = 'Push falló para todas las suscripciones activas.'
+    } else if (pushAttempted === 0 && emailsAttempted > 0 && emailsSent === 0 && resendConfigured) {
+      failureReason = 'Email configurado pero ningún envío completado (¿email verificado en Resend?).'
+    } else if (result?.note) {
+      failureReason = result.note
+    }
+
+    const deliveryFailed =
+      Boolean(failureReason) ||
+      emailsFailed > 0 ||
+      (pushAttempted > 0 && pushSent === 0 && pushFailed > 0)
 
     return {
       recipientCount: result?.recipient_count ?? prepRow?.recipient_count ?? 0,
       alreadySent: Boolean(result?.already_sent),
-      pushSent: result?.push?.sent ?? 0,
-      emailsSent: result?.email?.sent ?? 0,
-      failed: false,
+      pushSent,
+      emailsSent,
+      pushAttempted,
+      emailsAttempted,
+      emailsFailed,
+      pushFailed,
+      vapidConfigured,
+      resendConfigured,
+      note: result?.note,
+      emailErrors,
+      failed: deliveryFailed,
+      failureReason,
     }
   } catch (error) {
     console.warn('[posts] publishPostNotifications unexpected error', error)

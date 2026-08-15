@@ -1,6 +1,6 @@
 # Notificaciones automáticas al publicar — Coach Merche
 
-Cuando Merche publica una novedad desde **Gestión → Publicaciones**, la app envía tres tipos de aviso a cada alumna **aprobada**:
+Cuando Merche publica una novedad desde **Gestión → Publicaciones**, la app envía tres tipos de aviso a cada alumna **aprobada** y a **cuentas admin** (para probar con «Ver como alumna» sin segunda cuenta):
 
 | Canal | Dónde vive | Requiere config extra |
 |-------|------------|------------------------|
@@ -83,7 +83,10 @@ Ver también [pwa-push.md](./pwa-push.md).
 
 ```bash
 supabase secrets set RESEND_API_KEY=re_xxxxxxxx
-supabase secrets set FROM_EMAIL="Coach Merche <noreply@tudominio.com>"
+# PowerShell: usa comillas simples por fuera para que < > no se interpreten
+supabase secrets set FROM_EMAIL='Coach Merche <noreply@tudominio.com>'
+# Bash / macOS:
+# supabase secrets set FROM_EMAIL="Coach Merche <noreply@tudominio.com>"
 ```
 
 Sin `RESEND_API_KEY`, la función responde OK pero no envía correos (modo stub).
