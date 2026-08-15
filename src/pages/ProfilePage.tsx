@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TopBar } from '@/components/navigation/TopBar'
 import { NotificationBell } from '@/features/notifications'
@@ -22,16 +22,23 @@ import { profileService, postsService, toFriendlyMessage } from '@/services'
 import type { Post } from '@/types'
 
 const EDIT_FORM_ID = 'profile-edit-form'
+const AVATAR_ACCEPT = 'image/jpeg,image/png,image/webp'
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024
 
 export function ProfilePage() {
   const navigate = useNavigate()
   const { user, profile, effectiveIsAdmin, isPro, signOut, refreshProfile } = useAuth()
   const { showToast } = useToast()
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const previewObjectUrlRef = useRef<string | null>(null)
 
   const [editOpen, setEditOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [name, setName] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
+  const [existingAvatarUrl, setExistingAvatarUrl] = useState<string | null>(null)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
+  const [avatarError, setAvatarError] = useState<string | undefined>(undefined)
   const [nameError, setNameError] = useState<string | undefined>(undefined)
   const [saving, setSaving] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
@@ -39,6 +46,7 @@ export function ProfilePage() {
   const [latestPostLoading, setLatestPostLoading] = useState(true)
 
   const displayName = profile?.name ?? 'Tu perfil'
+  const editorAvatarSrc = avatarPreviewUrl ?? existingAvatarUrl
 
   useEffect(() => {
     let cancelled = false
@@ -62,11 +70,59 @@ export function ProfilePage() {
     }
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (previewObjectUrlRef.current) {
+        URL.revokeObjectURL(previewObjectUrlRef.current)
+      }
+    }
+  }, [])
+
+  function clearAvatarPreview() {
+    if (previewObjectUrlRef.current) {
+      URL.revokeObjectURL(previewObjectUrlRef.current)
+      previewObjectUrlRef.current = null
+    }
+    setAvatarPreviewUrl(null)
+  }
+
   function openEditor() {
     setName(profile?.name ?? '')
-    setAvatarUrl(profile?.avatar_url ?? '')
+    setExistingAvatarUrl(profile?.avatar_url ?? null)
+    setAvatarFile(null)
+    clearAvatarPreview()
+    setAvatarError(undefined)
     setNameError(undefined)
     setEditOpen(true)
+  }
+
+  function closeEditor() {
+    setEditOpen(false)
+    setAvatarFile(null)
+    clearAvatarPreview()
+  }
+
+  function handleAvatarSelect(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) return
+
+    if (!AVATAR_ACCEPT.split(',').includes(file.type)) {
+      setAvatarError('La foto debe ser JPG, PNG o WebP.')
+      return
+    }
+    if (file.size > AVATAR_MAX_BYTES) {
+      setAvatarError('La foto no puede superar 2 MB.')
+      return
+    }
+
+    setAvatarError(undefined)
+    clearAvatarPreview()
+    const objectUrl = URL.createObjectURL(file)
+    previewObjectUrlRef.current = objectUrl
+    setAvatarFile(file)
+    setAvatarPreviewUrl(objectUrl)
   }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
@@ -79,12 +135,18 @@ export function ProfilePage() {
 
     setSaving(true)
     try {
+      let avatarUrl = existingAvatarUrl
+
+      if (avatarFile) {
+        avatarUrl = await profileService.uploadAvatar(user.id, avatarFile)
+      }
+
       await profileService.updateProfile(user.id, {
         name: name.trim(),
-        avatar_url: avatarUrl.trim() || null,
+        avatar_url: avatarUrl,
       })
       await refreshProfile()
-      setEditOpen(false)
+      closeEditor()
       showToast('Perfil actualizado')
     } catch (updateError) {
       showToast(toFriendlyMessage(updateError), 'error')
@@ -184,11 +246,11 @@ export function ProfilePage() {
 
       <Modal
         open={editOpen}
-        onClose={() => setEditOpen(false)}
+        onClose={closeEditor}
         title="Editar perfil"
         footer={
           <>
-            <Button variant="secondary" fullWidth onClick={() => setEditOpen(false)}>
+            <Button variant="secondary" fullWidth onClick={closeEditor}>
               Cancelar
             </Button>
             <Button type="submit" form={EDIT_FORM_ID} fullWidth loading={saving}>
@@ -203,6 +265,48 @@ export function ProfilePage() {
           noValidate
           className="flex flex-col gap-4"
         >
+          <div className="flex flex-col items-center gap-3">
+            <button
+              type="button"
+              aria-label="Elegir foto de perfil"
+              className="group relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              onClick={() => avatarInputRef.current?.click()}
+            >
+              <Avatar name={name.trim() || displayName} src={editorAvatarSrc} size="lg" />
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                Elegir foto
+              </span>
+            </button>
+            <input
+              ref={avatarInputRef}
+              id="profile-avatar"
+              type="file"
+              accept={AVATAR_ACCEPT}
+              className="sr-only"
+              onChange={handleAvatarSelect}
+            />
+            <div className="flex flex-col items-center gap-2 text-center">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => avatarInputRef.current?.click()}
+              >
+                Elegir foto
+              </Button>
+              <p className="text-xs text-ink-muted">
+                Toca para elegir una foto de tu galería. JPG, PNG o WebP · máx. 2 MB.
+              </p>
+              {avatarError && (
+                <p role="alert" className="text-xs text-danger">
+                  {avatarError}
+                </p>
+              )}
+              {avatarFile && (
+                <p className="text-xs font-medium text-lime">{avatarFile.name}</p>
+              )}
+            </div>
+          </div>
+
           <Input
             id="profile-name"
             label="Nombre"
@@ -212,19 +316,6 @@ export function ProfilePage() {
             value={name}
             error={nameError}
             onChange={(event) => setName(event.target.value)}
-          />
-
-          <Input
-            id="profile-avatar"
-            label="Foto de perfil"
-            type="url"
-            inputMode="url"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder="https://..."
-            hint="Pega el enlace de una foto. Muy pronto podrás subirla desde el móvil."
-            value={avatarUrl}
-            onChange={(event) => setAvatarUrl(event.target.value)}
           />
         </form>
       </Modal>
