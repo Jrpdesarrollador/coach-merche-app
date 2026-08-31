@@ -793,7 +793,7 @@ export function AdminUsersPage() {
         title="Volver a Basic"
         message={
           tierModal?.action === 'downgrade'
-            ? `¿Quieres pasar a ${displayName(tierModal.user)} al plan Basic? Perderá acceso a los entrenamientos en vídeo.`
+            ? `¿Quieres pasar a ${displayName(tierModal.user)} al plan Basic? Seguirá teniendo acceso a los entrenamientos en vídeo.`
             : ''
         }
         confirmLabel="Confirmar Basic"

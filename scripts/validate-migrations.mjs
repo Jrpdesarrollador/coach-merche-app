@@ -244,9 +244,13 @@ async function runSmokeTests(db) {
     `fuera_de_dia=${wrongWeekday.rows[0].total}`,
   )
 
-  const beforeRecurring = await db.query('select count(*)::int as total from public.classes')
+  const beforeRecurring = await db.query(
+    'select count(*)::int as total from public.classes',
+  )
   await db.query('select public.ensure_recurring_classes(12)')
-  const afterRecurring = await db.query('select count(*)::int as total from public.classes')
+  const afterRecurring = await db.query(
+    'select count(*)::int as total from public.classes',
+  )
   check(
     'ensure_recurring_classes es idempotente',
     beforeRecurring.rows[0].total === afterRecurring.rows[0].total,
@@ -409,7 +413,10 @@ async function runSmokeTests(db) {
   )
 
   const autoAfter = await db.query(`select public.workout_count('${ANA}') as total`)
-  check('El contador refleja la asistencia auto-confirmada', autoAfter.rows[0].total === 1)
+  check(
+    'El contador refleja la asistencia auto-confirmada',
+    autoAfter.rows[0].total === 1,
+  )
 
   const autoRewardRows = await db.query(`
     select r.name
@@ -423,7 +430,9 @@ async function runSmokeTests(db) {
     JSON.stringify(autoRewardRows.rows),
   )
 
-  const autoRepeat = await db.query(`select public.process_auto_attendance('${ANA}') as total`)
+  const autoRepeat = await db.query(
+    `select public.process_auto_attendance('${ANA}') as total`,
+  )
   check(
     'process_auto_attendance es idempotente',
     autoRepeat.rows[0].total === 0,
@@ -438,7 +447,9 @@ async function runSmokeTests(db) {
   `)
   await signInAs(ANA)
   await db.query(`select public.book_class('99999999-9999-9999-9999-999999999999')`)
-  const futureAuto = await db.query(`select public.process_auto_attendance('${ANA}') as total`)
+  const futureAuto = await db.query(
+    `select public.process_auto_attendance('${ANA}') as total`,
+  )
   check(
     'No auto-confirma clases futuras',
     futureAuto.rows[0].total === 0,
@@ -562,6 +573,35 @@ async function runSmokeTests(db) {
     createWorkout.detail,
   )
 
+  await signInAs()
+  await db.exec(`
+    update public.workouts
+    set video_path = 'full-body-test.mp4'
+    where id = '${WORKOUT}';
+
+    insert into storage.objects (bucket_id, name, owner)
+    values ('workout-videos', 'full-body-test.mp4', '${MERCHE}');
+  `)
+
+  await signInAs(ANA)
+  const visibleWorkoutVideo = await db.query(`
+    select w.requires_pro,
+      exists (
+        select 1
+        from storage.objects o
+        where o.bucket_id = 'workout-videos'
+          and o.name = w.video_path
+      ) as can_read_video
+    from public.workouts w
+    where w.id = '${WORKOUT}'
+  `)
+  check(
+    'Alumna Basic ve entrenamientos y sus vídeos',
+    visibleWorkoutVideo.rows[0]?.requires_pro === false &&
+      visibleWorkoutVideo.rows[0]?.can_read_video === true,
+    JSON.stringify(visibleWorkoutVideo.rows[0]),
+  )
+
   // ---- Visibilidad de publicaciones -------------------------------------
   await signInAs()
   await db.exec(`
@@ -571,10 +611,7 @@ async function runSmokeTests(db) {
   `)
   await signInAs(ANA)
   const visiblePosts = await db.query('select count(*)::int as total from public.posts')
-  check(
-    'Una alumna solo ve publicaciones publicadas',
-    visiblePosts.rows[0].total === 1,
-  )
+  check('Una alumna solo ve publicaciones publicadas', visiblePosts.rows[0].total === 1)
 
   await signInAs(MERCHE)
   const notifyPost = await db.query(`
@@ -700,11 +737,10 @@ async function runSmokeTests(db) {
   check('Alumna puede guardar suscripción push', pushSubs.rows[0].total === 1)
 
   await signInAs(MERCHE)
-  const pendingRewards = await db.query(`select * from public.admin_list_pending_rewards()`)
-  check(
-    'Admin puede listar recompensas pendientes',
-    Array.isArray(pendingRewards.rows),
+  const pendingRewards = await db.query(
+    `select * from public.admin_list_pending_rewards()`,
   )
+  check('Admin puede listar recompensas pendientes', Array.isArray(pendingRewards.rows))
 
   // ---- Roles Basic/Pro y aprobación -------------------------------------
   await signInAs()
@@ -736,7 +772,10 @@ async function runSmokeTests(db) {
   const proCheck = await db.query(
     `select public.is_pro_member('88888888-8888-8888-8888-888888888888') as is_pro`,
   )
-  check('is_pro_member devuelve true para Pro aprobada', proCheck.rows[0]?.is_pro === true)
+  check(
+    'is_pro_member devuelve true para Pro aprobada',
+    proCheck.rows[0]?.is_pro === true,
+  )
 
   const basicCheck = await db.query(`select public.is_pro_member('${ANA}') as is_pro`)
   check('Basic no es Pro', basicCheck.rows[0]?.is_pro === false)
@@ -773,10 +812,7 @@ async function runSmokeTests(db) {
   )
 
   const report = await db.query(`select public.admin_export_report('month') as data`)
-  check(
-    'admin_export_report devuelve JSON',
-    report.rows[0]?.data?.period === 'month',
-  )
+  check('admin_export_report devuelve JSON', report.rows[0]?.data?.period === 'month')
 
   let failed = 0
   for (const result of results) {

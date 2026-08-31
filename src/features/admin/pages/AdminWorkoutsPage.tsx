@@ -11,6 +11,7 @@ import {
   Textarea,
 } from '@/components/ui'
 import { AdminSection } from '@/features/admin/components/AdminSection'
+import { WorkoutVideoPlayer } from '@/features/workouts/WorkoutVideoPlayer'
 import { useToast } from '@/hooks/useToast'
 import {
   MAX_WORKOUT_VIDEO_BYTES,
@@ -21,10 +22,14 @@ import {
 import type { Workout } from '@/types'
 import { formatShortDate } from '@/utils/datetime'
 
+interface AdminWorkout extends Workout {
+  signedUrl?: string | null
+}
+
 export function AdminWorkoutsPage() {
   const { showToast } = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
-  const [workouts, setWorkouts] = useState<Workout[]>([])
+  const [workouts, setWorkouts] = useState<AdminWorkout[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
@@ -37,7 +42,15 @@ export function AdminWorkoutsPage() {
 
   async function reload() {
     const rows = await workoutsService.listAll()
-    setWorkouts(rows)
+    const withUrls = await Promise.all(
+      rows.map(async (workout) => ({
+        ...workout,
+        signedUrl: workout.video_path
+          ? await workoutsService.getSignedVideoUrl(workout.video_path)
+          : workout.video_url,
+      })),
+    )
+    setWorkouts(withUrls)
   }
 
   useEffect(() => {
@@ -76,10 +89,10 @@ export function AdminWorkoutsPage() {
         description: description.trim() || null,
         poster_url: posterUrl.trim() || '/assets/workouts/full-body.jpg',
         video_path: videoPath,
-        requires_pro: true,
+        requires_pro: false,
         active: true,
       })
-      showToast('Entrenamiento publicado — aviso enviado a Pro')
+      showToast('Entrenamiento publicado — aviso enviado a las alumnas')
       setTitle('')
       setDescription('')
       setVideoFile(null)
@@ -148,7 +161,9 @@ export function AdminWorkoutsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-display text-lg text-ink">Entrenamientos en vídeo</p>
-          <p className="text-xs text-ink-muted">Solo visible para alumnas Pro.</p>
+          <p className="text-xs text-ink-muted">
+            Visible para todas las alumnas aprobadas.
+          </p>
         </div>
         <Button variant="primary" onClick={() => setShowUpload((prev) => !prev)}>
           {showUpload ? 'Cerrar formulario' : '+ Subir vídeo nuevo'}
@@ -158,7 +173,7 @@ export function AdminWorkoutsPage() {
       {showUpload && (
         <AdminSection
           title="Nuevo entrenamiento"
-          description="Sube el vídeo y se avisará automáticamente a las Pro."
+          description="Sube el vídeo y se avisará automáticamente a todas las alumnas."
         >
           <Card className="flex flex-col gap-4">
             <Input
@@ -244,7 +259,7 @@ export function AdminWorkoutsPage() {
 
       <AdminSection
         title="Publicados"
-        description={`${published.length} entrenamiento${published.length !== 1 ? 's' : ''} visibles para Pro.`}
+        description={`${published.length} entrenamiento${published.length !== 1 ? 's' : ''} visibles para todas las alumnas.`}
       >
         {published.length === 0 ? (
           <EmptyState
@@ -256,22 +271,37 @@ export function AdminWorkoutsPage() {
           <ul className="flex flex-col gap-2">
             {published.map((workout) => (
               <li key={workout.id}>
-                <Card className="flex items-center justify-between gap-3 transition-colors hover:border-line-lime">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-ink">{workout.title}</p>
-                    <p className="text-xs text-ink-muted">
-                      Publicado {formatShortDate(workout.created_at)}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Badge tone="lime">Publicado</Badge>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => void toggleActive(workout)}
-                    >
-                      Ocultar
-                    </Button>
+                <Card className="overflow-hidden p-0 transition-colors hover:border-line-lime">
+                  {workout.signedUrl ? (
+                    <WorkoutVideoPlayer
+                      src={workout.signedUrl}
+                      poster={workout.poster_url}
+                      title={workout.title}
+                    />
+                  ) : (
+                    <img
+                      src={workout.poster_url}
+                      alt=""
+                      className="aspect-video w-full object-cover"
+                    />
+                  )}
+                  <div className="flex items-center justify-between gap-3 p-4">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-ink">{workout.title}</p>
+                      <p className="text-xs text-ink-muted">
+                        Publicado {formatShortDate(workout.created_at)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Badge tone="lime">Publicado</Badge>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => void toggleActive(workout)}
+                      >
+                        Ocultar
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               </li>
@@ -288,22 +318,39 @@ export function AdminWorkoutsPage() {
           <ul className="flex flex-col gap-2">
             {drafts.map((workout) => (
               <li key={workout.id}>
-                <Card className="flex items-center justify-between gap-3 opacity-90">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-ink-muted">{workout.title}</p>
-                    <p className="text-xs text-ink-muted">
-                      Creado {formatShortDate(workout.created_at)}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Badge tone="neutral">Oculto</Badge>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => void toggleActive(workout)}
-                    >
-                      Publicar
-                    </Button>
+                <Card className="overflow-hidden p-0 opacity-90">
+                  {workout.signedUrl ? (
+                    <WorkoutVideoPlayer
+                      src={workout.signedUrl}
+                      poster={workout.poster_url}
+                      title={workout.title}
+                    />
+                  ) : (
+                    <img
+                      src={workout.poster_url}
+                      alt=""
+                      className="aspect-video w-full object-cover"
+                    />
+                  )}
+                  <div className="flex items-center justify-between gap-3 p-4">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-ink-muted">
+                        {workout.title}
+                      </p>
+                      <p className="text-xs text-ink-muted">
+                        Creado {formatShortDate(workout.created_at)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Badge tone="neutral">Oculto</Badge>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => void toggleActive(workout)}
+                      >
+                        Publicar
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               </li>
