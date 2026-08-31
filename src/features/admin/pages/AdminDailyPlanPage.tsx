@@ -207,7 +207,9 @@ export function AdminDailyPlanPage() {
               min={todayISO()}
               label="Día del entrenamiento"
               value={selectedDate}
-              onChange={(event) => setSelectedDate(event.target.value)}
+              onChange={(event) => {
+                if (event.target.value) setSelectedDate(event.target.value)
+              }}
             />
             <Button variant="secondary" onClick={() => setSelectedDate(todayISO())}>
               Hoy
