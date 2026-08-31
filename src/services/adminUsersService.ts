@@ -7,7 +7,7 @@ import type {
   MembershipTier,
   SubscriptionPlan,
 } from '@/types'
-import { serviceError } from './errors'
+import { ServiceError, SUPABASE_NOT_CONFIGURED_MESSAGE, serviceError } from './errors'
 
 async function listUsersWithStats(): Promise<AdminUserWithStats[]> {
   if (!isSupabaseConfigured) return []
@@ -27,7 +27,7 @@ async function approveUser(
   const { error } = await supabase.rpc('admin_approve_user', {
     p_user_id: userId,
     p_tier: tier,
-    p_subscription_plan: tier === 'pro' ? subscriptionPlan ?? 'monthly' : null,
+    p_subscription_plan: tier === 'pro' ? (subscriptionPlan ?? 'monthly') : null,
   })
   if (error) throw serviceError(error)
 }
@@ -37,6 +37,40 @@ async function rejectUser(userId: string): Promise<void> {
 
   const { error } = await supabase.rpc('admin_reject_user', { p_user_id: userId })
   if (error) throw serviceError(error)
+}
+
+interface DeleteUserResponse {
+  ok?: boolean
+  error?: string
+}
+
+async function deleteUser(userId: string): Promise<void> {
+  if (!isSupabaseConfigured) {
+    throw new ServiceError(SUPABASE_NOT_CONFIGURED_MESSAGE)
+  }
+
+  const { data, error } = await supabase.functions.invoke<DeleteUserResponse>(
+    'admin-delete-user',
+    { body: { user_id: userId } },
+  )
+
+  if (error || !data?.ok) {
+    const code = data?.error?.toUpperCase()
+
+    if (code === 'USER_NOT_FOUND') {
+      throw new ServiceError('No encontramos a esa alumna.')
+    }
+    if (code === 'ADMIN_DELETE_NOT_ALLOWED') {
+      throw new ServiceError(
+        'Las cuentas administradoras no se pueden eliminar desde este panel.',
+      )
+    }
+    if (code === 'FORBIDDEN') {
+      throw new ServiceError('No tienes permiso para eliminar cuentas.')
+    }
+
+    throw serviceError(error, 'No hemos podido eliminar la cuenta. Vuelve a intentarlo.')
+  }
 }
 
 async function setMembershipTier(
@@ -49,7 +83,7 @@ async function setMembershipTier(
   const { error } = await supabase.rpc('admin_set_membership_tier', {
     p_user_id: userId,
     p_tier: tier,
-    p_subscription_plan: tier === 'pro' ? subscriptionPlan ?? 'monthly' : null,
+    p_subscription_plan: tier === 'pro' ? (subscriptionPlan ?? 'monthly') : null,
   })
   if (error) throw serviceError(error)
 }
@@ -120,6 +154,7 @@ export const adminUsersService = {
   listUsersWithStats,
   approveUser,
   rejectUser,
+  deleteUser,
   setMembershipTier,
   countPendingApprovals,
   listChatThreads,

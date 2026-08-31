@@ -17,7 +17,12 @@ import {
 import { AdminSection } from '@/features/admin/components/AdminSection'
 import { useToast } from '@/hooks/useToast'
 import { adminUsersService, manualAdminService, toFriendlyMessage } from '@/services'
-import type { AdminUserWithStats, ManualBalanceSummary, MembershipTier, SubscriptionPlan } from '@/types'
+import type {
+  AdminUserWithStats,
+  ManualBalanceSummary,
+  MembershipTier,
+  SubscriptionPlan,
+} from '@/types'
 import { formatShortDate } from '@/utils/datetime'
 import { formatCurrency } from '@/utils/currency'
 import { cn } from '@/utils/cn'
@@ -45,12 +50,13 @@ const planOptions = [
 function balanceLabel(summary: ManualBalanceSummary | undefined): string {
   if (!summary) return '—'
   if (summary.debt_classes > 0) return `${summary.debt_classes} cls. debidas`
-  if (summary.available_classes > 0) return `${summary.available_classes} cls. disponibles`
+  if (summary.available_classes > 0)
+    return `${summary.available_classes} cls. disponibles`
   return 'Al día'
 }
 
 type TierAction = 'upgrade' | 'downgrade'
-type UsersTab = 'pending' | 'active'
+type UsersTab = 'pending' | 'active' | 'rejected'
 
 export function AdminUsersPage() {
   const { showToast } = useToast()
@@ -59,9 +65,10 @@ export function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [acting, setActing] = useState<string | null>(null)
   const [proPlan, setProPlan] = useState<SubscriptionPlan>('monthly')
-  const [tierModal, setTierModal] = useState<{ user: AdminUserWithStats; action: TierAction } | null>(
-    null,
-  )
+  const [tierModal, setTierModal] = useState<{
+    user: AdminUserWithStats
+    action: TierAction
+  } | null>(null)
   const [newName, setNewName] = useState('')
   const [newLastName, setNewLastName] = useState('')
   const [newEmail, setNewEmail] = useState('')
@@ -75,13 +82,15 @@ export function AdminUsersPage() {
   const [editNotes, setEditNotes] = useState('')
   const [editSaving, setEditSaving] = useState(false)
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
+  const [deleteUser, setDeleteUser] = useState<AdminUserWithStats | null>(null)
   const [balanceSummary, setBalanceSummary] = useState<ManualBalanceSummary[]>([])
   const [tab, setTab] = useState<UsersTab>(
     searchParams.get('nueva') === '1' ? 'active' : 'pending',
   )
 
   const pending = useMemo(
-    () => users.filter((user) => user.role === 'user' && user.approval_status === 'pending'),
+    () =>
+      users.filter((user) => user.role === 'user' && user.approval_status === 'pending'),
     [users],
   )
 
@@ -91,7 +100,14 @@ export function AdminUsersPage() {
   )
 
   const active = useMemo(
-    () => users.filter((user) => user.role === 'user' && user.approval_status === 'approved'),
+    () =>
+      users.filter((user) => user.role === 'user' && user.approval_status === 'approved'),
+    [users],
+  )
+
+  const rejected = useMemo(
+    () =>
+      users.filter((user) => user.role === 'user' && user.approval_status === 'rejected'),
     [users],
   )
 
@@ -127,8 +143,14 @@ export function AdminUsersPage() {
   async function handleApprove(userId: string, tier: MembershipTier) {
     setActing(userId)
     try {
-      await adminUsersService.approveUser(userId, tier, tier === 'pro' ? proPlan : undefined)
-      showToast(tier === 'pro' ? 'Alumna aprobada con plan Pro' : 'Alumna aprobada como Basic')
+      await adminUsersService.approveUser(
+        userId,
+        tier,
+        tier === 'pro' ? proPlan : undefined,
+      )
+      showToast(
+        tier === 'pro' ? 'Alumna aprobada con plan Pro' : 'Alumna aprobada como Basic',
+      )
       await reload()
     } catch (error) {
       showToast(toFriendlyMessage(error), 'error')
@@ -235,6 +257,23 @@ export function AdminUsersPage() {
     }
   }
 
+  async function handleDeleteUser() {
+    if (!deleteUser) return
+
+    setActing(deleteUser.id)
+    try {
+      await adminUsersService.deleteUser(deleteUser.id)
+      showToast(`${displayName(deleteUser)} ha sido eliminada definitivamente`)
+      setExpandedUserId((current) => (current === deleteUser.id ? null : current))
+      setDeleteUser(null)
+      await reload()
+    } catch (error) {
+      showToast(toFriendlyMessage(error), 'error')
+    } finally {
+      setActing(null)
+    }
+  }
+
   if (loading) {
     return (
       <section className="flex flex-col gap-4">
@@ -246,30 +285,51 @@ export function AdminUsersPage() {
 
   return (
     <>
-      <div className="flex gap-2 rounded-[16px] border border-line bg-surface p-1.5">
+      <div className="flex gap-1 rounded-[16px] border border-line bg-surface p-1.5 sm:gap-2">
         <button
           type="button"
           onClick={() => setTab('pending')}
           className={cn(
-            'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-bold transition-colors',
-            tab === 'pending' ? 'bg-lime text-black' : 'text-ink-muted hover:text-ink-soft',
+            'flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-colors sm:gap-2 sm:text-sm',
+            tab === 'pending'
+              ? 'bg-lime text-black'
+              : 'text-ink-muted hover:text-ink-soft',
           )}
         >
           Pendientes
           {pending.length > 0 && (
-            <Badge tone={tab === 'pending' ? 'neutral' : 'warning'}>{pending.length}</Badge>
+            <Badge tone={tab === 'pending' ? 'neutral' : 'warning'}>
+              {pending.length}
+            </Badge>
           )}
         </button>
         <button
           type="button"
           onClick={() => setTab('active')}
           className={cn(
-            'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-bold transition-colors',
-            tab === 'active' ? 'bg-lime text-black' : 'text-ink-muted hover:text-ink-soft',
+            'flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-colors sm:gap-2 sm:text-sm',
+            tab === 'active'
+              ? 'bg-lime text-black'
+              : 'text-ink-muted hover:text-ink-soft',
           )}
         >
           Activas
           <Badge tone={tab === 'active' ? 'neutral' : 'lime'}>{active.length}</Badge>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('rejected')}
+          className={cn(
+            'flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-colors sm:text-sm',
+            tab === 'rejected'
+              ? 'bg-lime text-black'
+              : 'text-ink-muted hover:text-ink-soft',
+          )}
+        >
+          Rechazadas
+          <Badge tone={tab === 'rejected' ? 'neutral' : 'danger'}>
+            {rejected.length}
+          </Badge>
         </button>
       </div>
 
@@ -299,7 +359,9 @@ export function AdminUsersPage() {
                     <div className="flex items-center gap-3">
                       <Avatar name={displayName(user)} src={user.avatar_url} size="md" />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-ink">{displayName(user)}</p>
+                        <p className="truncate font-medium text-ink">
+                          {displayName(user)}
+                        </p>
                         <p className="truncate text-xs text-ink-muted">{user.email}</p>
                         <p className="text-xs text-ink-muted">
                           Registro: {formatShortDate(user.created_at)}
@@ -312,7 +374,9 @@ export function AdminUsersPage() {
                         id={`pending-plan-${user.id}`}
                         label="Plan Pro"
                         value={proPlan}
-                        onChange={(event) => setProPlan(event.target.value as SubscriptionPlan)}
+                        onChange={(event) =>
+                          setProPlan(event.target.value as SubscriptionPlan)
+                        }
                         options={[...planOptions]}
                         className="min-w-[140px] flex-1"
                       />
@@ -336,6 +400,13 @@ export function AdminUsersPage() {
                         onClick={() => void handleReject(user.id)}
                       >
                         Rechazar
+                      </Button>
+                      <Button
+                        variant="danger"
+                        loading={acting === user.id}
+                        onClick={() => setDeleteUser(user)}
+                      >
+                        Eliminar
                       </Button>
                     </div>
                   </Card>
@@ -375,13 +446,21 @@ export function AdminUsersPage() {
                           onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
                           aria-expanded={isExpanded}
                         >
-                          <Avatar name={displayName(user)} src={user.avatar_url} size="sm" />
+                          <Avatar
+                            name={displayName(user)}
+                            src={user.avatar_url}
+                            size="sm"
+                          />
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-ink">{displayName(user)}</p>
-                            <p className="truncate text-xs text-ink-muted">{user.email}</p>
+                            <p className="truncate text-sm font-medium text-ink">
+                              {displayName(user)}
+                            </p>
+                            <p className="truncate text-xs text-ink-muted">
+                              {user.email}
+                            </p>
                             <p className="text-[11px] text-ink-muted">
-                              {user.bookings_count} reservas · {user.attendance_count} asistencias ·{' '}
-                              {formatShortDate(user.last_activity_at)}
+                              {user.bookings_count} reservas · {user.attendance_count}{' '}
+                              asistencias · {formatShortDate(user.last_activity_at)}
                             </p>
                           </div>
                           <ChevronRightIcon
@@ -392,8 +471,14 @@ export function AdminUsersPage() {
                         </button>
 
                         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                          <Badge tone={isPro ? 'lime' : 'neutral'}>{tierLabels[tier]}</Badge>
-                          <Button size="sm" variant="secondary" onClick={() => openEdit(user)}>
+                          <Badge tone={isPro ? 'lime' : 'neutral'}>
+                            {tierLabels[tier]}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => openEdit(user)}
+                          >
                             Editar
                           </Button>
                           {!isPro ? (
@@ -435,7 +520,9 @@ export function AdminUsersPage() {
                             </div>
                             <div className="rounded-xl border border-line/70 p-2.5 text-center">
                               <p className="font-display text-lg font-black text-lime">
-                                {balance ? formatCurrency(Number(balance.paid_cents)) : '—'}
+                                {balance
+                                  ? formatCurrency(Number(balance.paid_cents))
+                                  : '—'}
                               </p>
                               <p className="text-[10px] text-ink-muted">Pagado</p>
                             </div>
@@ -446,14 +533,18 @@ export function AdminUsersPage() {
                               <p className="text-[10px] text-ink-muted">Saldo 7 €</p>
                             </div>
                             <div className="rounded-xl border border-line/70 p-2.5 text-center">
-                              <p className="font-display text-lg font-black text-ink">{user.bookings_count}</p>
+                              <p className="font-display text-lg font-black text-ink">
+                                {user.bookings_count}
+                              </p>
                               <p className="text-[10px] text-ink-muted">Reservas app</p>
                             </div>
                           </div>
                           {isPro && user.subscription_plan && (
                             <p className="mt-2 text-xs text-ink-muted">
                               Cuota Pro:{' '}
-                              {user.subscription_plan === 'monthly' ? '8,99 €/mes' : '80 €/año'}
+                              {user.subscription_plan === 'monthly'
+                                ? '8,99 €/mes'
+                                : '80 €/año'}
                             </p>
                           )}
                           <div className="mt-3 flex flex-wrap gap-2">
@@ -469,6 +560,14 @@ export function AdminUsersPage() {
                             >
                               Cobrar / marcar asistencia
                             </Link>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              loading={acting === user.id}
+                              onClick={() => setDeleteUser(user)}
+                            >
+                              Eliminar alumna
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -476,6 +575,59 @@ export function AdminUsersPage() {
                   </li>
                 )
               })}
+            </ul>
+          )}
+        </AdminSection>
+      )}
+
+      {tab === 'rejected' && (
+        <AdminSection
+          title="Solicitudes rechazadas"
+          description="Puedes recuperar una solicitud o eliminar la cuenta definitivamente."
+        >
+          {rejected.length === 0 ? (
+            <EmptyState
+              title="No hay solicitudes rechazadas"
+              description="Las solicitudes que rechaces aparecerán aquí."
+              icon={<UserIcon width={24} height={24} />}
+            />
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {rejected.map((user) => (
+                <li key={user.id}>
+                  <Card className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={displayName(user)} src={user.avatar_url} size="md" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-ink">
+                          {displayName(user)}
+                        </p>
+                        <p className="truncate text-xs text-ink-muted">{user.email}</p>
+                        <p className="text-xs text-ink-muted">
+                          Registro: {formatShortDate(user.created_at)}
+                        </p>
+                      </div>
+                      <Badge tone="danger">{approvalLabels.rejected}</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="secondary"
+                        loading={acting === user.id}
+                        onClick={() => void handleApprove(user.id, 'basic')}
+                      >
+                        Aprobar Basic
+                      </Button>
+                      <Button
+                        variant="danger"
+                        loading={acting === user.id}
+                        onClick={() => setDeleteUser(user)}
+                      >
+                        Eliminar cuenta
+                      </Button>
+                    </div>
+                  </Card>
+                </li>
+              ))}
             </ul>
           )}
         </AdminSection>
@@ -500,7 +652,12 @@ export function AdminUsersPage() {
             <Button variant="secondary" fullWidth onClick={closeCreateModal}>
               Cancelar
             </Button>
-            <Button variant="primary" fullWidth loading={creating} onClick={() => void handleCreateManual()}>
+            <Button
+              variant="primary"
+              fullWidth
+              loading={creating}
+              onClick={() => void handleCreateManual()}
+            >
               Crear alumna
             </Button>
           </>
@@ -550,7 +707,12 @@ export function AdminUsersPage() {
             <Button variant="secondary" fullWidth onClick={() => setEditUser(null)}>
               Cancelar
             </Button>
-            <Button variant="primary" fullWidth loading={editSaving} onClick={() => void handleSaveEdit()}>
+            <Button
+              variant="primary"
+              fullWidth
+              loading={editSaving}
+              onClick={() => void handleSaveEdit()}
+            >
               Guardar
             </Button>
           </>
@@ -610,8 +772,10 @@ export function AdminUsersPage() {
           <div className="flex flex-col gap-4">
             <p className="text-sm text-ink-soft">
               Vas a activar el plan Pro para{' '}
-              <span className="font-semibold text-ink">{displayName(tierModal.user)}</span>. Elige
-              la cuota:
+              <span className="font-semibold text-ink">
+                {displayName(tierModal.user)}
+              </span>
+              . Elige la cuota:
             </p>
             <Select
               id="upgrade-pro-plan"
@@ -637,6 +801,21 @@ export function AdminUsersPage() {
         loading={acting === tierModal?.user.id}
         onConfirm={() => void handleTierChange()}
         onCancel={() => setTierModal(null)}
+      />
+
+      <ConfirmDialog
+        open={deleteUser !== null}
+        title="Eliminar cuenta definitivamente"
+        message={
+          deleteUser
+            ? `¿Quieres eliminar a ${displayName(deleteUser)}? Se borrarán su cuenta, reservas, asistencias, pagos, chat, notificaciones y recompensas. Esta acción no se puede deshacer.`
+            : ''
+        }
+        confirmLabel="Sí, eliminar cuenta"
+        destructive
+        loading={acting === deleteUser?.id}
+        onConfirm={() => void handleDeleteUser()}
+        onCancel={() => setDeleteUser(null)}
       />
     </>
   )
