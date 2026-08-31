@@ -6,12 +6,18 @@ import {
   Card,
   EmptyState,
   Input,
+  ProgressBar,
   Skeleton,
   Textarea,
 } from '@/components/ui'
 import { AdminSection } from '@/features/admin/components/AdminSection'
 import { useToast } from '@/hooks/useToast'
-import { toFriendlyMessage, workoutsService } from '@/services'
+import {
+  MAX_WORKOUT_VIDEO_BYTES,
+  toFriendlyMessage,
+  workoutsService,
+  WORKOUT_VIDEO_TYPES,
+} from '@/services'
 import type { Workout } from '@/types'
 import { formatShortDate } from '@/utils/datetime'
 
@@ -26,6 +32,8 @@ export function AdminWorkoutsPage() {
   const [description, setDescription] = useState('')
   const [posterUrl, setPosterUrl] = useState('/assets/workouts/full-body.jpg')
   const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadStatus, setUploadStatus] = useState('')
 
   async function reload() {
     const rows = await workoutsService.listAll()
@@ -50,8 +58,19 @@ export function AdminWorkoutsPage() {
     }
 
     setSaving(true)
+    setUploadProgress(0)
+    setUploadStatus('Preparando el vídeo…')
+    let uploadedVideoPath: string | null = null
     try {
-      const videoPath = await workoutsService.uploadVideo(videoFile)
+      const videoPath = await workoutsService.uploadVideo(videoFile, {
+        onProgress: ({ percentage }) => {
+          setUploadProgress(percentage)
+          setUploadStatus(
+            percentage < 100 ? `Subiendo vídeo · ${percentage}%` : 'Procesando vídeo…',
+          )
+        },
+      })
+      uploadedVideoPath = videoPath
       await workoutsService.createWorkout({
         title: title.trim(),
         description: description.trim() || null,
@@ -64,14 +83,50 @@ export function AdminWorkoutsPage() {
       setTitle('')
       setDescription('')
       setVideoFile(null)
+      setUploadProgress(0)
+      setUploadStatus('')
       setShowUpload(false)
       if (fileRef.current) fileRef.current.value = ''
       await reload()
     } catch (error) {
+      if (uploadedVideoPath) {
+        await workoutsService.removeVideo(uploadedVideoPath).catch(() => undefined)
+      }
       showToast(toFriendlyMessage(error), 'error')
     } finally {
       setSaving(false)
     }
+  }
+
+  function handleVideoSelection(file: File | null) {
+    setUploadProgress(0)
+    setUploadStatus('')
+
+    if (!file) {
+      setVideoFile(null)
+      return
+    }
+
+    if (!WORKOUT_VIDEO_TYPES.has(file.type)) {
+      showToast('El vídeo debe estar en formato MP4, WebM o MOV.', 'error')
+      if (fileRef.current) fileRef.current.value = ''
+      setVideoFile(null)
+      return
+    }
+
+    if (file.size > MAX_WORKOUT_VIDEO_BYTES) {
+      showToast('El vídeo supera el máximo de 2 GB.', 'error')
+      if (fileRef.current) fileRef.current.value = ''
+      setVideoFile(null)
+      return
+    }
+
+    setVideoFile(file)
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(2)} GB`
+    return `${(bytes / 1024 ** 2).toFixed(1)} MB`
   }
 
   async function toggleActive(workout: Workout) {
@@ -128,8 +183,11 @@ export function AdminWorkoutsPage() {
               onChange={(event) => setPosterUrl(event.target.value)}
             />
             <div>
-              <label htmlFor="workout-video" className="mb-1.5 block text-sm font-medium text-ink-soft">
-                Vídeo (MP4, WebM)
+              <label
+                htmlFor="workout-video"
+                className="mb-1.5 block text-sm font-medium text-ink-soft"
+              >
+                Vídeo (MP4, WebM o MOV · máximo 2 GB)
               </label>
               <input
                 ref={fileRef}
@@ -137,11 +195,48 @@ export function AdminWorkoutsPage() {
                 type="file"
                 accept="video/mp4,video/webm,video/quicktime"
                 className="block w-full text-sm text-ink-muted file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-lime file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-black"
-                onChange={(event) => setVideoFile(event.target.files?.[0] ?? null)}
+                disabled={saving}
+                onChange={(event) =>
+                  handleVideoSelection(event.target.files?.[0] ?? null)
+                }
               />
+              <p className="mt-2 text-xs leading-relaxed text-ink-muted">
+                La subida continúa automáticamente si la conexión se corta. Para que se
+                vea bien en iPhone, Android y ordenador, recomendamos MP4 con vídeo H.264
+                y audio AAC.
+              </p>
+              {videoFile && (
+                <p className="mt-2 text-sm font-medium text-ink-soft">
+                  {videoFile.name} · {formatFileSize(videoFile.size)}
+                </p>
+              )}
             </div>
-            <Button variant="primary" size="lg" loading={saving} onClick={() => void handlePublish()}>
-              Publicar entrenamiento
+            {saving && (
+              <div
+                className="rounded-xl border border-line-lime bg-green-deep/50 p-3"
+                aria-live="polite"
+              >
+                <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                  <span className="font-medium text-ink">{uploadStatus}</span>
+                  <span className="tabular-nums text-lime">{uploadProgress}%</span>
+                </div>
+                <ProgressBar
+                  value={uploadProgress}
+                  max={100}
+                  label="Progreso de subida del vídeo"
+                />
+                <p className="mt-2 text-xs text-ink-muted">
+                  No cierres esta pantalla hasta que termine la publicación.
+                </p>
+              </div>
+            )}
+            <Button
+              variant="primary"
+              size="lg"
+              loading={saving}
+              onClick={() => void handlePublish()}
+            >
+              {saving ? 'Subiendo entrenamiento…' : 'Publicar entrenamiento'}
             </Button>
           </Card>
         </AdminSection>
@@ -170,7 +265,11 @@ export function AdminWorkoutsPage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <Badge tone="lime">Publicado</Badge>
-                    <Button variant="secondary" size="sm" onClick={() => void toggleActive(workout)}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => void toggleActive(workout)}
+                    >
                       Ocultar
                     </Button>
                   </div>
@@ -198,7 +297,11 @@ export function AdminWorkoutsPage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <Badge tone="neutral">Oculto</Badge>
-                    <Button variant="primary" size="sm" onClick={() => void toggleActive(workout)}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => void toggleActive(workout)}
+                    >
                       Publicar
                     </Button>
                   </div>

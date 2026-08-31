@@ -12,7 +12,12 @@ export { profileService, type ProfileUpdate } from './profileService'
 export { classesService, type ClassWithWorkout } from './classesService'
 export { bookingsService } from './bookingsService'
 export { postsService, type PublishPostNotificationResult } from './postsService'
-export { workoutsService } from './workoutsService'
+export {
+  MAX_WORKOUT_VIDEO_BYTES,
+  WORKOUT_VIDEO_TYPES,
+  workoutsService,
+  type VideoUploadProgress,
+} from './workoutsService'
 export {
   rewardsService,
   type AdminUserReward,
@@ -25,7 +30,11 @@ export {
 export { pushService, type PushSubscriptionPayload } from './pushService'
 export { notificationsService, type SendNotificationInput } from './notificationsService'
 export { manualAdminService, CLASS_PRICE_CENTS } from './manualAdminService'
-export { historyAdminService, type HistoryEntry, type HistoryEntryKind } from './historyAdminService'
+export {
+  historyAdminService,
+  type HistoryEntry,
+  type HistoryEntryKind,
+} from './historyAdminService'
 export { paymentsService, type PaymentUpsert } from './paymentsService'
 export { chatService } from './chatService'
 export { reportsService, type ReportData } from './reportsService'
