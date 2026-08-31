@@ -23,7 +23,7 @@ export const FAQ_ITEMS = [
   {
     question: '¿Qué son Basic y Pro?',
     answer:
-      'Basic incluye reservas, logros y novedades. Pro desbloquea la biblioteca completa de entrenamientos y contenido extra. Merche te indica el plan que tienes en tu perfil.',
+      'Basic y Pro incluyen reservas, logros, novedades y la biblioteca de entrenamientos en vídeo. El plan Pro añade ventajas y contenido extra. Merche te indica el plan que tienes en tu perfil.',
   },
   {
     question: '¿Cómo funcionan los logros y recompensas?',
