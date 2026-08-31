@@ -520,7 +520,7 @@ async function runSmokeTests(db) {
   await db.exec(`
     insert into public.classes (id, workout_id, date, start_time, location, capacity, status)
     values
-      ('66666666-6666-6666-6666-666666666666', '${WORKOUT}', (current_date - 1), '20:00', 'Urbanización', 10, 'scheduled'),
+      ('66666666-6666-6666-6666-666666666666', '${WORKOUT}', (current_date - 7), '20:00', 'Urbanización', 10, 'scheduled'),
       ('77777777-7777-7777-7777-777777777777', '${WORKOUT}', '${cancelledClassDate}', '19:00', 'Box Coach Merche', 10, 'cancelled');
   `)
 
@@ -785,6 +785,67 @@ async function runSmokeTests(db) {
     'Admin lista usuarias con stats',
     usersStats.rows.length >= 4,
     `total=${usersStats.rows.length}`,
+  )
+
+  // ---- Borrado definitivo de alumnas manuales --------------------------
+  const manualStudent = await db.query(`
+    select (public.admin_create_student(
+      'Carla Manual',
+      null,
+      null,
+      'Prueba de borrado'
+    )).id as id
+  `)
+  const manualStudentId = manualStudent.rows[0]?.id
+
+  await db.query(`
+    insert into public.chat_messages (user_id, sender_role, body)
+    values ('${manualStudentId}', 'admin', 'Mensaje que debe borrarse en cascada')
+  `)
+
+  await signInAs(ANA)
+  const unauthorizedManualDelete = await expectFailure(
+    `select public.admin_delete_manual_student('${manualStudentId}')`,
+    'permission denied',
+  )
+  check(
+    'Una alumna no puede ejecutar el borrado manual protegido',
+    unauthorizedManualDelete.ok,
+    unauthorizedManualDelete.detail,
+  )
+
+  await signInAs()
+  await db.exec('set role service_role;')
+  const refusedRegisteredStudent = await db.query(
+    `select public.admin_delete_manual_student('${ANA}') as deleted`,
+  )
+  const deletedManualStudent = await db.query(
+    `select public.admin_delete_manual_student('${manualStudentId}') as deleted`,
+  )
+  await signInAs()
+
+  const registeredStudentStillExists = await db.query(
+    `select count(*)::int as total from auth.users where id = '${ANA}'`,
+  )
+  check(
+    'El borrado manual protegido rechaza cuentas registradas',
+    refusedRegisteredStudent.rows[0]?.deleted === false &&
+      registeredStudentStillExists.rows[0]?.total === 1,
+  )
+
+  const deletedManualRows = await db.query(`
+    select
+      (select count(*)::int from auth.users where id = '${manualStudentId}') as auth_users,
+      (select count(*)::int from public.profiles where id = '${manualStudentId}') as profiles,
+      (select count(*)::int from public.chat_messages where user_id = '${manualStudentId}') as messages
+  `)
+  check(
+    'Admin elimina definitivamente una alumna manual y sus datos',
+    deletedManualStudent.rows[0]?.deleted === true &&
+      deletedManualRows.rows[0]?.auth_users === 0 &&
+      deletedManualRows.rows[0]?.profiles === 0 &&
+      deletedManualRows.rows[0]?.messages === 0,
+    JSON.stringify(deletedManualRows.rows[0]),
   )
 
   // ---- Chat -------------------------------------------------------------
