@@ -78,7 +78,7 @@ Deno.serve(async (request) => {
 
     const { data: targetProfile, error: targetProfileError } = await adminClient
       .from('profiles')
-      .select('role')
+      .select('role, is_manual')
       .eq('id', targetUserId)
       .maybeSingle()
 
@@ -106,11 +106,34 @@ Deno.serve(async (request) => {
       if (avatarDeleteError) throw avatarDeleteError
     }
 
-    const { error: deleteError } = await adminClient.auth.admin.deleteUser(targetUserId)
-    if (deleteError) throw deleteError
+    console.info('admin-delete-user authorized', {
+      caller_user_id: caller.id,
+      target_user_id: targetUserId,
+      target_type: targetProfile.is_manual ? 'manual' : 'registered',
+    })
+
+    if (targetProfile.is_manual) {
+      const { data: deleted, error: manualDeleteError } = await adminClient.rpc(
+        'admin_delete_manual_student',
+        { p_user_id: targetUserId },
+      )
+
+      if (manualDeleteError) throw manualDeleteError
+      if (!deleted) {
+        return jsonResponse({ ok: false, error: 'USER_NOT_FOUND' }, 404)
+      }
+    } else {
+      const { error: deleteError } = await adminClient.auth.admin.deleteUser(targetUserId)
+      if (deleteError) throw deleteError
+    }
 
     // auth.users -> profiles y los datos personales relacionados se eliminan
-    // por las FK ON DELETE CASCADE.
+    // por las FK ON DELETE CASCADE, tanto en altas manuales como registradas.
+
+    console.info('admin-delete-user completed', {
+      target_user_id: targetUserId,
+      target_type: targetProfile.is_manual ? 'manual' : 'registered',
+    })
 
     return jsonResponse({ ok: true, deleted_user_id: targetUserId })
   } catch (error) {
