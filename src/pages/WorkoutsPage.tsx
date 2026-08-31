@@ -15,6 +15,7 @@ export function WorkoutsPage() {
   const { isPro } = useAuth()
   const [workouts, setWorkouts] = useState<WorkoutWithVideo[]>([])
   const [loading, setLoading] = useState(true)
+  const [playbackErrors, setPlaybackErrors] = useState<Set<string>>(() => new Set())
 
   useEffect(() => {
     async function load() {
@@ -60,8 +61,8 @@ export function WorkoutsPage() {
             <div>
               <h2 className="font-display text-xl text-ink">Entrenamientos en vídeo</h2>
               <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-                Con el plan Pro accedes a la biblioteca completa de entrenamientos grabados de
-                Merche, disponibles cuando quieras.
+                Con el plan Pro accedes a la biblioteca completa de entrenamientos
+                grabados de Merche, disponibles cuando quieras.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
@@ -73,8 +74,8 @@ export function WorkoutsPage() {
               </span>
             </div>
             <p className="text-xs text-ink-muted">
-              Merche activará tu suscripción Pro desde el panel de gestión. Próximamente podrás
-              suscribirte online (Stripe, Fase 15).
+              Merche activará tu suscripción Pro desde el panel de gestión. Próximamente
+              podrás suscribirte online (Stripe, Fase 15).
             </p>
             <Button variant="primary" disabled>
               Contacta con Merche para activar Pro
@@ -99,16 +100,41 @@ export function WorkoutsPage() {
           workouts.map((workout) => (
             <Card key={workout.id} className="flex flex-col gap-3 overflow-hidden p-0">
               {workout.signedUrl ? (
-                <video
-                  controls
-                  playsInline
-                  preload="metadata"
-                  poster={workout.poster_url}
-                  className="aspect-video w-full bg-black object-cover"
-                  src={workout.signedUrl}
-                >
-                  Tu navegador no soporta vídeo HTML5.
-                </video>
+                playbackErrors.has(workout.id) ? (
+                  <div className="flex aspect-video flex-col items-center justify-center gap-3 bg-black px-6 text-center">
+                    <p className="text-sm text-white">
+                      No hemos podido reproducir este vídeo.
+                    </p>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setPlaybackErrors((current) => {
+                          const next = new Set(current)
+                          next.delete(workout.id)
+                          return next
+                        })
+                      }}
+                    >
+                      Reintentar
+                    </Button>
+                  </div>
+                ) : (
+                  <video
+                    key={`${workout.id}-${playbackErrors.has(workout.id)}`}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    poster={workout.poster_url}
+                    className="aspect-video w-full bg-black object-contain"
+                    src={workout.signedUrl}
+                    onError={() =>
+                      setPlaybackErrors((current) => new Set(current).add(workout.id))
+                    }
+                  >
+                    Tu navegador no soporta vídeo HTML5.
+                  </video>
+                )
               ) : (
                 <img
                   src={workout.poster_url}
