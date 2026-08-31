@@ -9,9 +9,10 @@ import { formatShortDate } from '@/utils/datetime'
 
 interface PostCardProps {
   post: Post
+  label?: string
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, label = 'Novedades de Merche' }: PostCardProps) {
   const navigate = useNavigate()
   const excerpt = post.content?.trim()
   const imageUrl = post.media_type === 'image' ? postsService.resolveImageUrl(post) : null
@@ -55,7 +56,7 @@ export function PostCard({ post }: PostCardProps) {
       }}
     >
       <div className="flex items-center justify-between gap-2">
-        <CardLabel>Novedades de Merche</CardLabel>
+        <CardLabel>{label}</CardLabel>
         <ChevronRightIcon width={18} height={18} className="shrink-0 text-ink-muted" />
       </div>
       <CardTitle>{post.title}</CardTitle>

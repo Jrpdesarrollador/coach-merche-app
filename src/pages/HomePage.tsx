@@ -20,7 +20,12 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { useHomeData } from '@/hooks/useHomeData'
 import { useToast } from '@/hooks/useToast'
-import { SUPABASE_NOT_CONFIGURED_MESSAGE, bookingsService, toFriendlyMessage } from '@/services'
+import {
+  SUPABASE_NOT_CONFIGURED_MESSAGE,
+  bookingsService,
+  toFriendlyMessage,
+} from '@/services'
+import { formatFullClassDate } from '@/utils/datetime'
 
 function firstNameOf(fullName: string | undefined): string {
   return fullName?.trim().split(/\s+/)[0] ?? ''
@@ -153,8 +158,27 @@ export function HomePage() {
               <ProgressCard workoutCount={0} nextReward={null} highestReward={null} />
             )}
 
+            {data?.todayPlan && (
+              <Card highlight className="flex flex-col gap-2">
+                <p className="text-[0.7rem] font-semibold tracking-[0.16em] text-lime uppercase">
+                  Tu plan de hoy
+                </p>
+                <p className="font-display text-xl capitalize text-ink">
+                  {formatFullClassDate(data.todayPlan.plan.plan_date)}
+                </p>
+                {data.todayPlan.plan.note && (
+                  <p className="text-sm leading-relaxed text-ink-soft">
+                    {data.todayPlan.plan.note}
+                  </p>
+                )}
+              </Card>
+            )}
+
             {data?.latestPost ? (
-              <PostCard post={data.latestPost} />
+              <PostCard
+                post={data.latestPost}
+                label={data.todayPlan?.post ? 'Publicación de hoy' : undefined}
+              />
             ) : (
               <Card className="flex flex-col gap-3">
                 <EmptyState
@@ -166,7 +190,11 @@ export function HomePage() {
             )}
 
             {data?.featuredWorkout ? (
-              <WorkoutCard workout={data.featuredWorkout} />
+              <WorkoutCard
+                workout={data.featuredWorkout}
+                label={data.todayPlan?.workout ? 'Entrenamiento de hoy' : undefined}
+                videoUrl={data.todayPlan?.workoutVideoUrl}
+              />
             ) : (
               <Card className="flex flex-col gap-3">
                 <EmptyState
@@ -193,7 +221,9 @@ export function HomePage() {
                 <p className="text-[0.7rem] font-semibold tracking-[0.16em] text-ink-muted uppercase">
                   Ayuda
                 </p>
-                <p className="mt-1 font-display text-base text-ink">Información y contacto</p>
+                <p className="mt-1 font-display text-base text-ink">
+                  Información y contacto
+                </p>
                 <p className="mt-1 text-sm text-ink-muted">WhatsApp, FAQ y más</p>
               </div>
               <span className="text-lime">→</span>

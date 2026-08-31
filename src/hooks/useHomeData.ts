@@ -4,11 +4,13 @@ import { resolveBookingState, type ClassBookingState } from '@/features/home'
 import {
   bookingsService,
   classesService,
+  dailyPlansService,
   postsService,
   rewardsService,
   toFriendlyMessage,
   workoutsService,
   type RewardProgress,
+  type DailyPlanContent,
 } from '@/services'
 import type { ClassWithWorkout } from '@/services/classesService'
 import type { ClassBooking, Post, Workout } from '@/types'
@@ -20,6 +22,7 @@ export interface HomeData {
   progress: RewardProgress | null
   latestPost: Post | null
   featuredWorkout: Workout | null
+  todayPlan: DailyPlanContent | null
 }
 
 interface HomeDataState {
@@ -68,12 +71,14 @@ export function useHomeData(userId: string | undefined): HomeDataState {
       setState((prev) => ({ ...prev, loading: true, error: null }))
 
       try {
-        const [nextClass, progress, latestPost, featuredWorkout] = await Promise.all([
-          classesService.getNextUpcoming(),
-          rewardsService.getProgress(userId!),
-          postsService.getLatestPublished(),
-          workoutsService.getFeatured(),
-        ])
+        const [nextClass, progress, latestPost, featuredWorkout, todayPlan] =
+          await Promise.all([
+            classesService.getNextUpcoming(),
+            rewardsService.getProgress(userId!),
+            postsService.getLatestPublished(),
+            workoutsService.getFeatured(),
+            dailyPlansService.getContentForDate(),
+          ])
 
         const booking = nextClass
           ? await bookingsService.getActiveForClass(userId!, nextClass.class.id)
@@ -90,8 +95,9 @@ export function useHomeData(userId: string | undefined): HomeDataState {
             booking,
             bookingState: resolveBookingState(nextClass, booking),
             progress,
-            latestPost,
-            featuredWorkout,
+            latestPost: todayPlan?.post ?? latestPost,
+            featuredWorkout: todayPlan?.workout ?? featuredWorkout,
+            todayPlan,
           },
         })
       } catch (error) {
@@ -111,6 +117,21 @@ export function useHomeData(userId: string | undefined): HomeDataState {
       cancelled = true
     }
   }, [userId, refreshToken])
+
+  useEffect(() => {
+    if (!userId || !isSupabaseConfigured) return
+
+    const unsubscribe = dailyPlansService.subscribe(refetch)
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refetch()
+    }
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+
+    return () => {
+      unsubscribe()
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [refetch, userId])
 
   return { ...state, refetch }
 }

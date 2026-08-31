@@ -674,6 +674,56 @@ async function runSmokeTests(db) {
     JSON.stringify(publishAfterReset.rows[0]?.data),
   )
 
+  // ---- Planificación diaria --------------------------------------------
+  await signInAs(MERCHE)
+  await db.query(`
+    insert into public.daily_plans (plan_date, workout_id, post_id, note)
+    values (
+      (now() at time zone 'Europe/Madrid')::date,
+      '${WORKOUT}',
+      '${notifyPostId}',
+      'Plan visible de hoy'
+    )
+  `)
+  await db.query(`
+    insert into public.daily_plans (plan_date, workout_id, note)
+    values ((now() at time zone 'Europe/Madrid')::date + 1, '${WORKOUT}', 'Plan de mañana')
+  `)
+
+  const adminDailyPlans = await db.query(
+    `select count(*)::int as total from public.daily_plans where plan_date >= (now() at time zone 'Europe/Madrid')::date`,
+  )
+  check(
+    'Merche puede planificar entrenamiento y publicación por fecha',
+    adminDailyPlans.rows[0]?.total === 2,
+  )
+
+  await signInAs(ANA)
+  const visibleDailyPlans = await db.query(
+    `select plan_date, workout_id, post_id from public.daily_plans order by plan_date`,
+  )
+  check(
+    'Una alumna ve el plan del día cuando llega la fecha',
+    visibleDailyPlans.rows.length === 1 &&
+      visibleDailyPlans.rows[0]?.workout_id === WORKOUT &&
+      visibleDailyPlans.rows[0]?.post_id === notifyPostId,
+    JSON.stringify(visibleDailyPlans.rows),
+  )
+  check(
+    'Una alumna no puede ver anticipadamente el plan de mañana',
+    visibleDailyPlans.rows.length === 1,
+  )
+
+  const unauthorizedPlan = await expectFailure(
+    `insert into public.daily_plans (plan_date, note) values ((now() at time zone 'Europe/Madrid')::date + 2, 'No permitido')`,
+    'row-level security',
+  )
+  check(
+    'Una alumna no puede crear ni cambiar la planificación',
+    unauthorizedPlan.ok,
+    unauthorizedPlan.detail,
+  )
+
   // ---- Notificaciones y pagos -------------------------------------------
   await signInAs(ANA)
   const anaPaymentsInsert = await expectFailure(

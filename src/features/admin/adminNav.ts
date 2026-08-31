@@ -5,6 +5,12 @@ export const adminNavGroups = [
     label: 'Día a día',
     items: [
       { to: '/gestion', label: 'Inicio', icon: '⌂', end: true as const },
+      {
+        to: '/gestion/plan-diario',
+        label: 'Plan diario',
+        icon: '🗓️',
+        end: false as const,
+      },
       { to: '/gestion/registrar', label: 'Registrar', icon: '✓', end: false as const },
       { to: '/gestion/usuarios', label: 'Alumnas', icon: '👥', end: false as const },
       { to: '/gestion/pagos', label: 'Pagos', icon: '€', end: false as const },
@@ -15,7 +21,12 @@ export const adminNavGroups = [
     label: 'Planificación',
     items: [
       { to: '/gestion/clases', label: 'Clases', icon: '▦', end: false as const },
-      { to: '/gestion/entrenos', label: 'Entrenamientos', icon: '🏋️', end: false as const },
+      {
+        to: '/gestion/entrenos',
+        label: 'Entrenamientos',
+        icon: '🏋️',
+        end: false as const,
+      },
       { to: '/gestion/historial', label: 'Historial', icon: '☷', end: false as const },
     ],
   },
@@ -26,7 +37,12 @@ export const adminNavGroups = [
       { to: '/gestion/publicaciones', label: 'Posts', icon: '📝', end: false as const },
       { to: '/gestion/chat', label: 'Chat', icon: '💬', end: false as const },
       { to: '/gestion/notificaciones', label: 'Avisos', icon: '🔔', end: false as const },
-      { to: '/gestion/recompensas', label: 'Recompensas', icon: '🏆', end: false as const },
+      {
+        to: '/gestion/recompensas',
+        label: 'Recompensas',
+        icon: '🏆',
+        end: false as const,
+      },
     ],
   },
   {
@@ -41,12 +57,14 @@ export const adminNavGroups = [
 
 export type AdminNavItem = (typeof adminNavGroups)[number]['items'][number]
 
-export const adminNavItems: AdminNavItem[] = adminNavGroups.flatMap((group) => [...group.items])
+export const adminNavItems: AdminNavItem[] = adminNavGroups.flatMap((group) => [
+  ...group.items,
+])
 
 /** Accesos principales en la barra inferior móvil (máx. 5). */
 export const adminMobilePrimaryNav: AdminNavItem[] = [
   { to: '/gestion', label: 'Inicio', icon: '⌂', end: true },
-  { to: '/gestion/registrar', label: 'Registrar', icon: '✓', end: false },
+  { to: '/gestion/plan-diario', label: 'Plan diario', icon: '🗓️', end: false },
   { to: '/gestion/usuarios', label: 'Alumnas', icon: '👥', end: false },
   { to: '/gestion/pagos', label: 'Pagos', icon: '€', end: false },
   { to: '/gestion/clases', label: 'Clases', icon: '▦', end: false },

@@ -1,10 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { PosterImage } from '@/components/brand'
 import { Badge, Button, Card, CardLabel, CardTitle } from '@/components/ui'
+import { WorkoutVideoPlayer } from '@/features/workouts/WorkoutVideoPlayer'
 import type { Workout, WorkoutDifficulty } from '@/types'
 
 interface WorkoutCardProps {
   workout: Workout
+  label?: string
+  videoUrl?: string | null
 }
 
 const difficultyLabels: Record<WorkoutDifficulty, string> = {
@@ -13,19 +16,31 @@ const difficultyLabels: Record<WorkoutDifficulty, string> = {
   alta: 'Alta',
 }
 
-export function WorkoutCard({ workout }: WorkoutCardProps) {
+export function WorkoutCard({
+  workout,
+  label = 'Entrenamiento destacado',
+  videoUrl,
+}: WorkoutCardProps) {
   const navigate = useNavigate()
 
   return (
     <Card className="flex flex-col gap-3">
-      <CardLabel>Entrenamiento destacado</CardLabel>
-      <PosterImage
-        src={workout.poster_url}
-        alt={workout.title}
-        ratio="4/5"
-        fit="cover"
-        className="w-full"
-      />
+      <CardLabel>{label}</CardLabel>
+      {videoUrl ? (
+        <WorkoutVideoPlayer
+          src={videoUrl}
+          poster={workout.poster_url}
+          title={workout.title}
+        />
+      ) : (
+        <PosterImage
+          src={workout.poster_url}
+          alt={workout.title}
+          ratio="4/5"
+          fit="cover"
+          className="w-full"
+        />
+      )}
       <CardTitle className="text-2xl">{workout.title}</CardTitle>
       <div className="flex flex-wrap items-center gap-2">
         {workout.difficulty && (
@@ -40,7 +55,7 @@ export function WorkoutCard({ workout }: WorkoutCardProps) {
         <p className="line-clamp-2 text-sm text-ink-soft">{workout.description}</p>
       )}
       <Button variant="secondary" fullWidth onClick={() => navigate('/entrenamientos')}>
-        Ver entrenamientos
+        {videoUrl ? 'Abrir biblioteca de entrenamientos' : 'Ver entrenamientos'}
       </Button>
     </Card>
   )

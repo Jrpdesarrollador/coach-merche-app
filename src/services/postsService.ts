@@ -68,6 +68,19 @@ async function getLatestPublished(): Promise<Post | null> {
   return data
 }
 
+async function getById(id: string): Promise<Post | null> {
+  if (!isSupabaseConfigured) return null
+
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (error) throw serviceError(error)
+  return data
+}
+
 async function getPublishedById(id: string): Promise<Post | null> {
   if (!isSupabaseConfigured) return null
 
@@ -150,7 +163,10 @@ async function uploadVideo(file: File): Promise<string> {
   return path
 }
 
-async function getSignedVideoUrl(videoPath: string, expiresIn = 3600): Promise<string | null> {
+async function getSignedVideoUrl(
+  videoPath: string,
+  expiresIn = 3600,
+): Promise<string | null> {
   if (!isSupabaseConfigured || !videoPath) return null
 
   const { data, error } = await supabase.storage
@@ -161,14 +177,19 @@ async function getSignedVideoUrl(videoPath: string, expiresIn = 3600): Promise<s
   return data?.signedUrl ?? null
 }
 
-async function removeStorageFile(bucket: string, path: string | null | undefined): Promise<void> {
+async function removeStorageFile(
+  bucket: string,
+  path: string | null | undefined,
+): Promise<void> {
   if (!isSupabaseConfigured || !path) return
 
   const { error } = await supabase.storage.from(bucket).remove([path])
   if (error) throw serviceError(error)
 }
 
-async function removePostMedia(post: Pick<Post, 'image_path' | 'video_path'>): Promise<void> {
+async function removePostMedia(
+  post: Pick<Post, 'image_path' | 'video_path'>,
+): Promise<void> {
   await removeStorageFile(IMAGE_BUCKET, post.image_path)
   await removeStorageFile(VIDEO_BUCKET, post.video_path)
 }
@@ -243,9 +264,12 @@ async function publishPostNotifications(
       await supabase.rpc('reset_post_notifications', { p_post_id: postId })
     }
 
-    const { data: prep, error: prepError } = await supabase.rpc('publish_post_notifications', {
-      p_post_id: postId,
-    })
+    const { data: prep, error: prepError } = await supabase.rpc(
+      'publish_post_notifications',
+      {
+        p_post_id: postId,
+      },
+    )
 
     if (prepError) {
       console.warn('[posts] publish_post_notifications failed', prepError)
@@ -275,7 +299,8 @@ async function publishPostNotifications(
         ...EMPTY_NOTIFICATION_RESULT,
         recipientCount: prepRow?.recipient_count ?? 0,
         failed: true,
-        failureReason: 'No se pudo conectar con el servicio de avisos. Comprueba que las Edge Functions están desplegadas.',
+        failureReason:
+          'No se pudo conectar con el servicio de avisos. Comprueba que las Edge Functions están desplegadas.',
       }
     }
 
@@ -311,7 +336,9 @@ async function publishPostNotifications(
         ...EMPTY_NOTIFICATION_RESULT,
         recipientCount: prepRow?.recipient_count ?? 0,
         alreadySent: true,
-        failureReason: result.delivery_summary ?? 'Los avisos push/email ya se enviaron. Usa «Reenviar avisos».',
+        failureReason:
+          result.delivery_summary ??
+          'Los avisos push/email ya se enviaron. Usa «Reenviar avisos».',
         failed: true,
       }
     }
@@ -379,6 +406,7 @@ async function publishPostNotifications(
 
 export const postsService = {
   getLatestPublished,
+  getById,
   getPublishedById,
   listPublished,
   listAll,

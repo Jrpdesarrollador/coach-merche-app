@@ -124,6 +124,30 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['workouts']['Insert']>
         Relationships: []
       }
+      daily_plans: {
+        Row: {
+          id: string
+          plan_date: string
+          workout_id: string | null
+          post_id: string | null
+          note: string | null
+          active: boolean
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          plan_date: string
+          workout_id?: string | null
+          post_id?: string | null
+          note?: string | null
+          active?: boolean
+          created_by?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['daily_plans']['Insert']>
+        Relationships: []
+      }
       classes: {
         Row: {
           id: string
@@ -730,6 +754,7 @@ export type Tables<T extends keyof Database['public']['Tables']> =
 
 export type Profile = Tables<'profiles'>
 export type Workout = Tables<'workouts'>
+export type DailyPlan = Tables<'daily_plans'>
 export type ClassRow = Tables<'classes'>
 export type ClassBooking = Tables<'class_bookings'>
 export type Attendance = Tables<'attendance'>
@@ -739,7 +764,8 @@ export type UserReward = Tables<'user_rewards'>
 export type ClassAvailability = Database['public']['Views']['class_availability']['Row']
 export type Payment = Tables<'payments'>
 export type Notification = Tables<'notifications'>
-export type AdminProfile = Database['public']['Functions']['admin_list_profiles']['Returns'][number]
+export type AdminProfile =
+  Database['public']['Functions']['admin_list_profiles']['Returns'][number]
 export type AdminUserWithStats =
   Database['public']['Functions']['admin_list_users_with_stats']['Returns'][number]
 export type ChatThread =

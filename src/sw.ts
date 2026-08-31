@@ -4,6 +4,7 @@ import { precacheAndRoute } from 'workbox-precaching'
 
 declare const self: ServiceWorkerGlobalScope
 
+self.skipWaiting()
 clientsClaim()
 precacheAndRoute(self.__WB_MANIFEST)
 
@@ -69,21 +70,23 @@ self.addEventListener('notificationclick', (event) => {
   const absoluteUrl = new URL(targetUrl, self.location.origin).href
 
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
-          if ('navigate' in client && typeof client.navigate === 'function') {
-            void client.navigate(absoluteUrl)
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+            if ('navigate' in client && typeof client.navigate === 'function') {
+              void client.navigate(absoluteUrl)
+            }
+            return client.focus()
           }
-          return client.focus()
         }
-      }
 
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(absoluteUrl)
-      }
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(absoluteUrl)
+        }
 
-      return undefined
-    }),
+        return undefined
+      }),
   )
 })

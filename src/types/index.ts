@@ -24,6 +24,7 @@ export type {
   ClassRow,
   ClassStatus,
   Database,
+  DailyPlan,
   Notification,
   NotificationType,
   Payment,

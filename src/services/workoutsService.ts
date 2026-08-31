@@ -77,6 +77,19 @@ async function getFeatured(): Promise<Workout | null> {
   return data
 }
 
+async function getById(id: string): Promise<Workout | null> {
+  if (!isSupabaseConfigured) return null
+
+  const { data, error } = await supabase
+    .from('workouts')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (error) throw serviceError(error)
+  return data
+}
+
 async function listActive(): Promise<Workout[]> {
   if (!isSupabaseConfigured) return []
 
@@ -258,6 +271,7 @@ async function checkIsProMember(userId?: string): Promise<boolean> {
 
 export const workoutsService = {
   getFeatured,
+  getById,
   listActive,
   listAll,
   createWorkout,

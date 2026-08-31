@@ -4,6 +4,7 @@ import {
   AdminClassDetailPage,
   AdminClassesPage,
   AdminDashboardPage,
+  AdminDailyPlanPage,
   AdminLayout,
   AdminNotificationsPage,
   AdminPaymentsPage,
@@ -71,6 +72,7 @@ export function AppRouter() {
           <Route element={<AdminRoute />}>
             <Route element={<AdminLayout />}>
               <Route path="gestion" element={<AdminDashboardPage />} />
+              <Route path="gestion/plan-diario" element={<AdminDailyPlanPage />} />
               <Route path="gestion/registrar" element={<AdminRegisterPage />} />
               <Route path="gestion/usuarios" element={<AdminUsersPage />} />
               <Route path="gestion/historial" element={<AdminHistoryPage />} />

@@ -2,10 +2,30 @@ import { Link } from 'react-router-dom'
 import { cn } from '@/utils/cn'
 
 const actions = [
-  { to: '/gestion/usuarios?nueva=1', label: 'Alumna', icon: '👤', accent: 'lime' as const },
-  { to: '/gestion/registrar?tab=pago', label: 'Pago', icon: '💶', accent: 'lime' as const },
-  { to: '/gestion/clases', label: 'Clase hoy', icon: '📅', accent: 'default' as const },
-  { to: '/gestion/registrar', label: 'Asistencia', icon: '✓', accent: 'default' as const },
+  {
+    to: '/gestion/plan-diario',
+    label: 'Plan diario',
+    icon: '🗓️',
+    accent: 'lime' as const,
+  },
+  {
+    to: '/gestion/usuarios?nueva=1',
+    label: 'Alumna',
+    icon: '👤',
+    accent: 'lime' as const,
+  },
+  {
+    to: '/gestion/registrar?tab=pago',
+    label: 'Pago',
+    icon: '💶',
+    accent: 'lime' as const,
+  },
+  {
+    to: '/gestion/registrar',
+    label: 'Asistencia',
+    icon: '✓',
+    accent: 'default' as const,
+  },
 ] as const
 
 const accentClasses = {

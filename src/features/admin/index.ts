@@ -1,5 +1,6 @@
 export { AdminLayout } from './AdminLayout'
 export { AdminDashboardPage } from './pages/AdminDashboardPage'
+export { AdminDailyPlanPage } from './pages/AdminDailyPlanPage'
 export { AdminClassesPage } from './pages/AdminClassesPage'
 export { AdminClassDetailPage } from './pages/AdminClassDetailPage'
 export { AdminPaymentsPage } from './pages/AdminPaymentsPage'

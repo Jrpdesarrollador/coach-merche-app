@@ -11,6 +11,7 @@ export { authService, type SignUpOutcome } from './authService'
 export { profileService, type ProfileUpdate } from './profileService'
 export { classesService, type ClassWithWorkout } from './classesService'
 export { bookingsService } from './bookingsService'
+export { dailyPlansService, type DailyPlanContent } from './dailyPlansService'
 export { postsService, type PublishPostNotificationResult } from './postsService'
 export {
   MAX_WORKOUT_VIDEO_BYTES,
