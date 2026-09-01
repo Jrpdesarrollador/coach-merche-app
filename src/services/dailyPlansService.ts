@@ -14,6 +14,19 @@ export interface DailyPlanContent {
   workoutVideoUrl: string | null
 }
 
+export interface ScheduledDailyPlan {
+  plan: DailyPlan
+  workout: Workout
+}
+
+export interface DailyPlanNotificationResult {
+  sent: number
+  attempted: number
+  failed: number
+  subscriptionCount: number
+  vapidConfigured: boolean
+}
+
 async function getForDate(date = todayISO()): Promise<DailyPlan | null> {
   if (!isSupabaseConfigured) return null
 
@@ -57,8 +70,30 @@ async function listRange(start: string, end: string): Promise<DailyPlan[]> {
   return data ?? []
 }
 
+async function listScheduledRange(
+  start: string,
+  end: string,
+): Promise<ScheduledDailyPlan[]> {
+  const plans = (await listRange(start, end)).filter(
+    (plan) => plan.active && Boolean(plan.workout_id),
+  )
+  const workouts = await workoutsService.listByIds(
+    plans.flatMap((plan) => (plan.workout_id ? [plan.workout_id] : [])),
+  )
+  const workoutsById = new Map(workouts.map((workout) => [workout.id, workout]))
+
+  return plans.flatMap((plan) => {
+    if (!plan.workout_id) return []
+    const workout = workoutsById.get(plan.workout_id)
+    return workout ? [{ plan, workout }] : []
+  })
+}
+
 async function save(
-  input: Pick<DailyPlanInsert, 'plan_date' | 'workout_id' | 'post_id' | 'note'>,
+  input: Pick<
+    DailyPlanInsert,
+    'plan_date' | 'plan_time' | 'workout_id' | 'post_id' | 'note'
+  >,
 ): Promise<DailyPlan> {
   if (!isSupabaseConfigured) throw serviceError(new Error('Supabase no configurado'))
 
@@ -70,6 +105,47 @@ async function save(
 
   if (error) throw serviceError(error)
   return data
+}
+
+async function notifyPlanSaved(planId: string): Promise<DailyPlanNotificationResult> {
+  if (!isSupabaseConfigured) {
+    return {
+      sent: 0,
+      attempted: 0,
+      failed: 0,
+      subscriptionCount: 0,
+      vapidConfigured: false,
+    }
+  }
+
+  const { data, error } = await supabase.functions.invoke('notify-daily-plan', {
+    body: { plan_id: planId },
+  })
+  if (error) throw serviceError(error)
+
+  const result = data as {
+    ok?: boolean
+    error?: string
+    push?: {
+      sent?: number
+      attempted?: number
+      failed?: number
+      subscription_count?: number
+      vapid_configured?: boolean
+    }
+  } | null
+
+  if (result?.ok === false) {
+    throw serviceError(new Error(result.error ?? 'No se pudo enviar el aviso.'))
+  }
+
+  return {
+    sent: result?.push?.sent ?? 0,
+    attempted: result?.push?.attempted ?? 0,
+    failed: result?.push?.failed ?? 0,
+    subscriptionCount: result?.push?.subscription_count ?? 0,
+    vapidConfigured: result?.push?.vapid_configured ?? false,
+  }
 }
 
 async function remove(id: string): Promise<void> {
@@ -101,7 +177,9 @@ export const dailyPlansService = {
   getForDate,
   getContentForDate,
   listRange,
+  listScheduledRange,
   save,
+  notifyPlanSaved,
   remove,
   subscribe,
 }

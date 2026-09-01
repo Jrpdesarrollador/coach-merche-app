@@ -25,7 +25,7 @@ import {
   bookingsService,
   toFriendlyMessage,
 } from '@/services'
-import { formatFullClassDate } from '@/utils/datetime'
+import { formatClassTime, formatFullClassDate } from '@/utils/datetime'
 
 function firstNameOf(fullName: string | undefined): string {
   return fullName?.trim().split(/\s+/)[0] ?? ''
@@ -165,6 +165,9 @@ export function HomePage() {
                 </p>
                 <p className="font-display text-xl capitalize text-ink">
                   {formatFullClassDate(data.todayPlan.plan.plan_date)}
+                </p>
+                <p className="text-sm font-semibold text-warning">
+                  A las {formatClassTime(data.todayPlan.plan.plan_time)}
                 </p>
                 {data.todayPlan.plan.note && (
                   <p className="text-sm leading-relaxed text-ink-soft">

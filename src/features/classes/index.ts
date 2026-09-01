@@ -7,4 +7,5 @@ export {
   type ClassListBadgeState,
 } from './ClassListItem'
 export { MonthView } from './MonthView'
+export { ScheduledWorkoutItem } from './ScheduledWorkoutItem'
 export { WeekView } from './WeekView'

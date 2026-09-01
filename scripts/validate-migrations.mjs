@@ -677,17 +677,18 @@ async function runSmokeTests(db) {
   // ---- Planificación diaria --------------------------------------------
   await signInAs(MERCHE)
   await db.query(`
-    insert into public.daily_plans (plan_date, workout_id, post_id, note)
+    insert into public.daily_plans (plan_date, plan_time, workout_id, post_id, note)
     values (
       (now() at time zone 'Europe/Madrid')::date,
+      '18:30',
       '${WORKOUT}',
       '${notifyPostId}',
       'Plan visible de hoy'
     )
   `)
   await db.query(`
-    insert into public.daily_plans (plan_date, workout_id, note)
-    values ((now() at time zone 'Europe/Madrid')::date + 1, '${WORKOUT}', 'Plan de mañana')
+    insert into public.daily_plans (plan_date, plan_time, workout_id, note)
+    values ((now() at time zone 'Europe/Madrid')::date + 1, '20:00', '${WORKOUT}', 'Plan de mañana')
   `)
 
   const adminDailyPlans = await db.query(
@@ -700,18 +701,30 @@ async function runSmokeTests(db) {
 
   await signInAs(ANA)
   const visibleDailyPlans = await db.query(
-    `select plan_date, workout_id, post_id from public.daily_plans order by plan_date`,
+    `select plan_date, plan_time, workout_id, post_id from public.daily_plans order by plan_date`,
   )
   check(
-    'Una alumna ve el plan del día cuando llega la fecha',
-    visibleDailyPlans.rows.length === 1 &&
+    'Una alumna ve los entrenamientos publicados en su calendario',
+    visibleDailyPlans.rows.length === 2 &&
       visibleDailyPlans.rows[0]?.workout_id === WORKOUT &&
-      visibleDailyPlans.rows[0]?.post_id === notifyPostId,
+      visibleDailyPlans.rows[0]?.post_id === notifyPostId &&
+      String(visibleDailyPlans.rows[0]?.plan_time).startsWith('18:30'),
     JSON.stringify(visibleDailyPlans.rows),
   )
   check(
-    'Una alumna no puede ver anticipadamente el plan de mañana',
-    visibleDailyPlans.rows.length === 1,
+    'Una alumna ve anticipadamente el entrenamiento de mañana',
+    visibleDailyPlans.rows[1]?.workout_id === WORKOUT &&
+      String(visibleDailyPlans.rows[1]?.plan_time).startsWith('20:00'),
+  )
+
+  const scheduledNotifications = await db.query(`
+    select count(*)::int as total
+    from public.notifications
+    where user_id = '${ANA}' and type = 'training_scheduled'
+  `)
+  check(
+    'Planificar entrenamientos crea avisos in-app para alumnas aprobadas',
+    scheduledNotifications.rows[0]?.total === 2,
   )
 
   const unauthorizedPlan = await expectFailure(

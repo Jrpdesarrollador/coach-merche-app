@@ -10,9 +10,17 @@ interface ModalProps {
   title: string
   children: ReactNode
   footer?: ReactNode
+  size?: 'default' | 'wide'
 }
 
-export function Modal({ open, onClose, title, children, footer }: ModalProps) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  size = 'default',
+}: ModalProps) {
   useOverlayBehavior(open, onClose)
 
   if (!open) return null
@@ -29,13 +37,25 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 w-full max-w-[var(--app-max-width)] animate-scale-in rounded-xl border border-line bg-surface shadow-premium"
+        className={
+          size === 'wide'
+            ? 'relative z-10 w-full max-w-4xl animate-scale-in rounded-xl border border-line bg-surface shadow-premium'
+            : 'relative z-10 w-full max-w-[var(--app-max-width)] animate-scale-in rounded-xl border border-line bg-surface shadow-premium'
+        }
       >
         <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
           <h2 className="font-display text-lg text-ink">{title}</h2>
           <IconButton label="Cerrar" icon={<CloseIcon />} onClick={onClose} />
         </header>
-        <div className="max-h-[60svh] overflow-y-auto px-4 py-4">{children}</div>
+        <div
+          className={
+            size === 'wide'
+              ? 'max-h-[82svh] overflow-y-auto px-3 py-3 sm:px-4 sm:py-4'
+              : 'max-h-[60svh] overflow-y-auto px-4 py-4'
+          }
+        >
+          {children}
+        </div>
         {footer && (
           <footer className="flex gap-2 border-t border-line px-4 py-3">{footer}</footer>
         )}

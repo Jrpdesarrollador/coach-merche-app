@@ -21,6 +21,7 @@ export type BookingStatus = 'active' | 'cancelled'
 export type BookingSource = 'app' | 'manual'
 export type ManualResetScope = 'payments' | 'attendance' | 'bookings' | 'all'
 export type WorkoutDifficulty = 'facil' | 'media' | 'alta'
+export type WorkoutMediaType = 'image' | 'video'
 export type RewardType = 'digital' | 'physical' | 'experience'
 export type UserRewardStatus = 'unlocked' | 'pending_delivery' | 'delivered'
 export type PaymentStatus = 'pending' | 'paid' | 'overdue'
@@ -31,6 +32,7 @@ export type NotificationType =
   | 'custom'
   | 'booking_confirmed'
   | 'new_post'
+  | 'training_scheduled'
 
 export type PostMediaType = 'none' | 'image' | 'video'
 
@@ -100,6 +102,8 @@ export interface Database {
           poster_url: string
           video_url: string | null
           video_path: string | null
+          image_path: string | null
+          media_type: WorkoutMediaType
           requires_pro: boolean
           difficulty: WorkoutDifficulty | null
           duration_minutes: number | null
@@ -115,6 +119,8 @@ export interface Database {
           poster_url: string
           video_url?: string | null
           video_path?: string | null
+          image_path?: string | null
+          media_type?: WorkoutMediaType
           requires_pro?: boolean
           difficulty?: WorkoutDifficulty | null
           duration_minutes?: number | null
@@ -128,6 +134,7 @@ export interface Database {
         Row: {
           id: string
           plan_date: string
+          plan_time: string
           workout_id: string | null
           post_id: string | null
           note: string | null
@@ -139,6 +146,7 @@ export interface Database {
         Insert: {
           id?: string
           plan_date: string
+          plan_time?: string
           workout_id?: string | null
           post_id?: string | null
           note?: string | null

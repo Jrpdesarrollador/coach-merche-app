@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import { CalendarViewToggle, MonthView, WeekView, type CalendarViewMode } from '@/features/classes'
+import {
+  CalendarViewToggle,
+  MonthView,
+  WeekView,
+  type CalendarViewMode,
+} from '@/features/classes'
 import { TopBar } from '@/components/navigation/TopBar'
 import { NotificationBell } from '@/features/notifications'
 
@@ -8,7 +13,7 @@ export function ClassesPage() {
 
   return (
     <>
-      <TopBar title="Clases" action={<NotificationBell />} />
+      <TopBar title="Calendario" action={<NotificationBell />} />
       <section className="flex flex-col gap-4 pt-2">
         <CalendarViewToggle mode={viewMode} onChange={setViewMode} />
         {viewMode === 'week' ? <WeekView /> : <MonthView />}

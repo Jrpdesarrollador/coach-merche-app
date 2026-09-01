@@ -41,4 +41,5 @@ export type {
   UserRole,
   Workout,
   WorkoutDifficulty,
+  WorkoutMediaType,
 } from './database'

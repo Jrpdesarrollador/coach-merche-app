@@ -6,11 +6,14 @@ type WorkoutInsert = Database['public']['Tables']['workouts']['Insert']
 type WorkoutUpdate = Database['public']['Tables']['workouts']['Update']
 
 const VIDEO_BUCKET = 'workout-videos'
+const IMAGE_BUCKET = 'workouts'
 const TUS_CHUNK_SIZE = 6 * 1024 * 1024
 const WORKOUT_VIDEO_CACHE_SECONDS = 86400
 
 export const MAX_WORKOUT_VIDEO_BYTES = 2 * 1024 * 1024 * 1024
 export const WORKOUT_VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime'])
+export const MAX_WORKOUT_IMAGE_BYTES = 10 * 1024 * 1024
+export const WORKOUT_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 export interface VideoUploadProgress {
   bytesUploaded: number
@@ -110,6 +113,18 @@ async function listAll(): Promise<Workout[]> {
     .from('workouts')
     .select('*')
     .order('created_at', { ascending: false })
+
+  if (error) throw serviceError(error)
+  return data ?? []
+}
+
+async function listByIds(ids: string[]): Promise<Workout[]> {
+  if (!isSupabaseConfigured || ids.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('workouts')
+    .select('*')
+    .in('id', [...new Set(ids)])
 
   if (error) throw serviceError(error)
   return data ?? []
@@ -238,6 +253,41 @@ async function uploadVideo(
   return completedPath
 }
 
+async function uploadImage(file: File): Promise<string> {
+  if (!isSupabaseConfigured) {
+    throw serviceError(new Error('Supabase no configurado'))
+  }
+  if (!WORKOUT_IMAGE_TYPES.has(file.type)) {
+    throw serviceError(new Error('La imagen debe estar en formato JPG, PNG o WebP.'))
+  }
+  if (file.size === 0) {
+    throw serviceError(new Error('La imagen está vacía.'))
+  }
+  if (file.size > MAX_WORKOUT_IMAGE_BYTES) {
+    throw serviceError(new Error('La imagen supera el máximo de 10 MB.'))
+  }
+
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+  const path = `${crypto.randomUUID()}.${extension}`
+  const { error } = await supabase.storage.from(IMAGE_BUCKET).upload(path, file, {
+    cacheControl: '86400',
+    upsert: false,
+    contentType: file.type,
+  })
+
+  if (error) throw serviceError(error)
+  return path
+}
+
+function getPublicImageUrl(imagePath: string): string {
+  const { data } = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(imagePath)
+  return data.publicUrl
+}
+
+function resolveImageUrl(workout: Workout): string {
+  return workout.image_path ? getPublicImageUrl(workout.image_path) : workout.poster_url
+}
+
 async function getSignedVideoUrl(
   videoPath: string,
   expiresIn = 21600,
@@ -259,6 +309,13 @@ async function removeVideo(videoPath: string): Promise<void> {
   if (error) throw serviceError(error)
 }
 
+async function removeImage(imagePath: string): Promise<void> {
+  if (!isSupabaseConfigured || !imagePath) return
+
+  const { error } = await supabase.storage.from(IMAGE_BUCKET).remove([imagePath])
+  if (error) throw serviceError(error)
+}
+
 async function checkIsProMember(userId?: string): Promise<boolean> {
   if (!isSupabaseConfigured) return false
 
@@ -274,10 +331,15 @@ export const workoutsService = {
   getById,
   listActive,
   listAll,
+  listByIds,
   createWorkout,
   updateWorkout,
   uploadVideo,
+  uploadImage,
+  getPublicImageUrl,
+  resolveImageUrl,
   removeVideo,
+  removeImage,
   getSignedVideoUrl,
   checkIsProMember,
   VIDEO_BUCKET,

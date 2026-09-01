@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { DumbbellIcon } from '@/components/icons'
 import { TopBar } from '@/components/navigation/TopBar'
 import { Badge, Card, CardLabel, EmptyState, Skeleton } from '@/components/ui'
 import { WorkoutVideoPlayer } from '@/features/workouts/WorkoutVideoPlayer'
+import { WorkoutImageViewer } from '@/features/workouts/WorkoutImageViewer'
 import { workoutsService } from '@/services'
 import type { Workout } from '@/types'
 
@@ -11,6 +13,8 @@ interface WorkoutWithVideo extends Workout {
 }
 
 export function WorkoutsPage() {
+  const [searchParams] = useSearchParams()
+  const selectedWorkoutId = searchParams.get('workout')
   const [workouts, setWorkouts] = useState<WorkoutWithVideo[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -56,17 +60,18 @@ export function WorkoutsPage() {
         ) : (
           workouts.map((workout) => (
             <Card key={workout.id} className="flex flex-col gap-3 overflow-hidden p-0">
-              {workout.signedUrl ? (
+              {workout.media_type === 'video' && workout.signedUrl ? (
                 <WorkoutVideoPlayer
                   src={workout.signedUrl}
                   poster={workout.poster_url}
                   title={workout.title}
                 />
               ) : (
-                <img
-                  src={workout.poster_url}
-                  alt=""
-                  className="aspect-video w-full object-cover"
+                <WorkoutImageViewer
+                  src={workoutsService.resolveImageUrl(workout)}
+                  title={workout.title}
+                  ratio="auto"
+                  openByDefault={selectedWorkoutId === workout.id}
                 />
               )}
               <div className="flex flex-col gap-1 px-4 pb-4">

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { BellIcon } from '@/components/icons'
 import { IconButton } from '@/components/ui/IconButton'
 import { useAuth } from '@/hooks/useAuth'
@@ -14,6 +15,7 @@ const typeLabels: Record<NotificationType, string> = {
   new_class: 'Clase',
   new_post: 'Novedad',
   custom: 'Aviso',
+  training_scheduled: 'Entrenamiento',
 }
 
 function NotificationItem({
@@ -53,8 +55,11 @@ function NotificationItem({
 }
 
 export function NotificationBell() {
+  const navigate = useNavigate()
   const { user } = useAuth()
-  const { notifications, unreadCount, loading, markRead, markAllRead } = useNotifications(user?.id)
+  const { notifications, unreadCount, loading, markRead, markAllRead } = useNotifications(
+    user?.id,
+  )
   const [open, setOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -104,7 +109,9 @@ export function NotificationBell() {
 
           <div className="max-h-80 overflow-y-auto">
             {loading && (
-              <p className="px-4 py-6 text-center text-sm text-ink-muted">Cargando avisos…</p>
+              <p className="px-4 py-6 text-center text-sm text-ink-muted">
+                Cargando avisos…
+              </p>
             )}
             {!loading && notifications.length === 0 && (
               <p className="px-4 py-6 text-center text-sm text-ink-muted">
@@ -122,6 +129,11 @@ export function NotificationBell() {
                   unread={!item.read_at}
                   onClick={() => {
                     if (!item.read_at) void markRead(item.id)
+                    const target = item.metadata.url
+                    if (typeof target === 'string' && target.startsWith('/')) {
+                      setOpen(false)
+                      navigate(target)
+                    }
                   }}
                 />
               ))}

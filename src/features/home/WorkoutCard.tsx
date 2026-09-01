@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { PosterImage } from '@/components/brand'
 import { Badge, Button, Card, CardLabel, CardTitle } from '@/components/ui'
+import { WorkoutImageViewer } from '@/features/workouts/WorkoutImageViewer'
 import { WorkoutVideoPlayer } from '@/features/workouts/WorkoutVideoPlayer'
 import type { Workout, WorkoutDifficulty } from '@/types'
 
@@ -33,11 +33,10 @@ export function WorkoutCard({
           title={workout.title}
         />
       ) : (
-        <PosterImage
+        <WorkoutImageViewer
           src={workout.poster_url}
-          alt={workout.title}
+          title={workout.title}
           ratio="4/5"
-          fit="cover"
           className="w-full"
         />
       )}

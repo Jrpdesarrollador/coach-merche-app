@@ -4,15 +4,18 @@ import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/ic
 import { Card, EmptyState, IconButton } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useClassesWeek } from '@/hooks/useClassesWeek'
+import { useScheduledPlans } from '@/hooks/useScheduledPlans'
 import { useWeekCalendar } from '@/hooks/useWeekCalendar'
 import { bookingsService } from '@/services'
 import type { ClassWithWorkout } from '@/services'
+import type { ScheduledDailyPlan } from '@/services'
 import { formatWeekRangeHeader, formatWeekdayShort, todayISO } from '@/utils/datetime'
 import {
   ClassListItem,
   ClassListItemSkeleton,
   resolveClassListState,
 } from './ClassListItem'
+import { ScheduledWorkoutItem } from './ScheduledWorkoutItem'
 
 function groupByDay(classes: ClassWithWorkout[]): Map<string, ClassWithWorkout[]> {
   const map = new Map<string, ClassWithWorkout[]>()
@@ -21,6 +24,16 @@ function groupByDay(classes: ClassWithWorkout[]): Map<string, ClassWithWorkout[]
     const existing = map.get(date) ?? []
     existing.push(item)
     map.set(date, existing)
+  }
+  return map
+}
+
+function groupPlansByDay(plans: ScheduledDailyPlan[]): Map<string, ScheduledDailyPlan[]> {
+  const map = new Map<string, ScheduledDailyPlan[]>()
+  for (const item of plans) {
+    const existing = map.get(item.plan.plan_date) ?? []
+    existing.push(item)
+    map.set(item.plan.plan_date, existing)
   }
   return map
 }
@@ -36,6 +49,11 @@ export function WeekView({ variant = 'user' }: WeekViewProps) {
   const { weekStart, weekEnd, days, isCurrentWeek, goToPreviousWeek, goToNextWeek } =
     useWeekCalendar()
   const { loading, error, classes } = useClassesWeek(weekStart)
+  const {
+    loading: plansLoading,
+    error: plansError,
+    plans,
+  } = useScheduledPlans(weekStart, weekEnd)
   const [bookedClassIds, setBookedClassIds] = useState<Set<string>>(new Set())
 
   const classIds = useMemo(() => classes.map((item) => item.class.id), [classes])
@@ -68,7 +86,8 @@ export function WeekView({ variant = 'user' }: WeekViewProps) {
   }, [isAdmin, user?.id, classIds])
 
   const classesByDay = useMemo(() => groupByDay(classes), [classes])
-  const hasClasses = classes.length > 0
+  const plansByDay = useMemo(() => groupPlansByDay(plans), [plans])
+  const hasCalendarItems = classes.length > 0 || plans.length > 0
   const today = todayISO()
 
   const classDetailPath = (id: string) =>
@@ -98,10 +117,17 @@ export function WeekView({ variant = 'user' }: WeekViewProps) {
       </div>
 
       {error && (
-        <Card className="border-danger/35 bg-danger/5 text-sm text-ink-soft">{error}</Card>
+        <Card className="border-danger/35 bg-danger/5 text-sm text-ink-soft">
+          {error}
+        </Card>
+      )}
+      {plansError && (
+        <Card className="border-danger/35 bg-danger/5 text-sm text-ink-soft">
+          {plansError}
+        </Card>
       )}
 
-      {loading ? (
+      {loading || plansLoading ? (
         <div className="flex flex-col gap-3">
           {days.map((day) => (
             <div key={day} className="flex flex-col gap-2">
@@ -112,12 +138,12 @@ export function WeekView({ variant = 'user' }: WeekViewProps) {
             </div>
           ))}
         </div>
-      ) : !hasClasses ? (
+      ) : !hasCalendarItems ? (
         <EmptyState
-          title={isAdmin ? 'No hay clases esta semana' : 'No hay clases esta semana'}
+          title="No hay actividad esta semana"
           description={
             isAdmin
-              ? 'Las clases recurrentes aparecerán aquí automáticamente.'
+              ? 'Las clases y entrenamientos programados aparecerán aquí.'
               : 'Merche está preparando lo próximo 💚'
           }
           icon={<CalendarIcon width={28} height={28} />}
@@ -126,6 +152,7 @@ export function WeekView({ variant = 'user' }: WeekViewProps) {
         <div className="flex flex-col gap-5">
           {days.map((day) => {
             const dayClasses = classesByDay.get(day) ?? []
+            const dayPlans = plansByDay.get(day) ?? []
             const isToday = day === today
 
             return (
@@ -147,9 +174,9 @@ export function WeekView({ variant = 'user' }: WeekViewProps) {
                   )}
                 </div>
 
-                {dayClasses.length === 0 ? (
+                {dayClasses.length === 0 && dayPlans.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-line/70 px-3 py-4 text-center text-sm text-ink-muted">
-                    Sin clases
+                    Sin actividad
                   </p>
                 ) : (
                   <div className="flex flex-col gap-2">
@@ -184,6 +211,15 @@ export function WeekView({ variant = 'user' }: WeekViewProps) {
                         />
                       )
                     })}
+                    {dayPlans.map((item) => (
+                      <ScheduledWorkoutItem
+                        key={item.plan.id}
+                        item={item}
+                        onSelect={(workoutId) =>
+                          navigate(`/entrenamientos?workout=${workoutId}`)
+                        }
+                      />
+                    ))}
                   </div>
                 )}
               </section>
@@ -191,7 +227,6 @@ export function WeekView({ variant = 'user' }: WeekViewProps) {
           })}
         </div>
       )}
-
     </div>
   )
 }

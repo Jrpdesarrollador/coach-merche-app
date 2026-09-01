@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PosterImage } from '@/components/brand'
 import {
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui'
 import { AdminSection } from '@/features/admin/components/AdminSection'
 import { WorkoutVideoPlayer } from '@/features/workouts/WorkoutVideoPlayer'
+import { WorkoutImageViewer } from '@/features/workouts/WorkoutImageViewer'
 import { useToast } from '@/hooks/useToast'
 import {
   dailyPlansService,
@@ -29,10 +30,12 @@ const linkClasses =
 
 export function AdminDailyPlanPage() {
   const { showToast } = useToast()
+  const quickImageRef = useRef<HTMLInputElement>(null)
   const [plans, setPlans] = useState<DailyPlan[]>([])
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [posts, setPosts] = useState<Post[]>([])
   const [selectedDate, setSelectedDate] = useState(todayISO())
+  const [planTime, setPlanTime] = useState('19:00')
   const [workoutId, setWorkoutId] = useState('')
   const [postId, setPostId] = useState('')
   const [note, setNote] = useState('')
@@ -42,6 +45,22 @@ export function AdminDailyPlanPage() {
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<DailyPlan | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [showQuickCreate, setShowQuickCreate] = useState(false)
+  const [quickTitle, setQuickTitle] = useState('')
+  const [quickDescription, setQuickDescription] = useState('')
+  const [quickImage, setQuickImage] = useState<File | null>(null)
+  const [creatingWorkout, setCreatingWorkout] = useState(false)
+
+  const quickPreviewUrl = useMemo(
+    () => (quickImage ? URL.createObjectURL(quickImage) : null),
+    [quickImage],
+  )
+
+  useEffect(() => {
+    return () => {
+      if (quickPreviewUrl) URL.revokeObjectURL(quickPreviewUrl)
+    }
+  }, [quickPreviewUrl])
 
   const rangeEnd = addDaysISO(todayISO(), 30)
   const currentPlan = plans.find((plan) => plan.plan_date === selectedDate) ?? null
@@ -70,6 +89,7 @@ export function AdminDailyPlanPage() {
   useEffect(() => {
     const plan = plans.find((item) => item.plan_date === selectedDate)
     setWorkoutId(plan?.workout_id ?? '')
+    setPlanTime(plan?.plan_time?.slice(0, 5) ?? '19:00')
     setPostId(plan?.post_id ?? '')
     setNote(plan?.note ?? '')
   }, [plans, selectedDate])
@@ -143,21 +163,94 @@ export function AdminDailyPlanPage() {
       showToast('Publica el post antes de asignarlo al día.', 'error')
       return
     }
+    if (!planTime) {
+      showToast('Indica la hora del entrenamiento.', 'error')
+      return
+    }
 
     setSaving(true)
     try {
-      await dailyPlansService.save({
+      const savedPlan = await dailyPlansService.save({
         plan_date: selectedDate,
+        plan_time: planTime,
         workout_id: workoutId || null,
         post_id: postId || null,
         note: note.trim() || null,
       })
       await reloadPlans()
-      showToast(`Plan guardado para ${formatFullClassDate(selectedDate)}`)
+      showToast(
+        `Plan guardado para ${formatFullClassDate(selectedDate)} a las ${planTime}`,
+      )
+
+      if (workoutId) {
+        try {
+          const delivery = await dailyPlansService.notifyPlanSaved(savedPlan.id)
+          if (delivery.sent > 0) {
+            showToast(
+              `Aviso enviado a ${delivery.sent} dispositivo${delivery.sent === 1 ? '' : 's'}`,
+            )
+          } else if (delivery.subscriptionCount === 0) {
+            showToast(
+              'Aviso guardado en la app; todavía no hay dispositivos con push activo.',
+              'error',
+            )
+          } else if (!delivery.vapidConfigured) {
+            showToast('Aviso guardado en la app; falta la configuración push.', 'error')
+          }
+        } catch (notificationError) {
+          showToast(
+            `Plan guardado, pero el aviso push no se pudo enviar: ${toFriendlyMessage(notificationError)}`,
+            'error',
+          )
+        }
+      }
     } catch (error) {
       showToast(toFriendlyMessage(error), 'error')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleQuickCreateWorkout() {
+    if (!quickTitle.trim()) {
+      showToast('Escribe el nombre del entrenamiento.', 'error')
+      return
+    }
+    if (!quickImage) {
+      showToast('Selecciona la imagen del entrenamiento.', 'error')
+      return
+    }
+
+    setCreatingWorkout(true)
+    let uploadedPath: string | null = null
+    try {
+      uploadedPath = await workoutsService.uploadImage(quickImage)
+      const workout = await workoutsService.createWorkout({
+        title: quickTitle.trim(),
+        description: quickDescription.trim() || null,
+        poster_url: workoutsService.getPublicImageUrl(uploadedPath),
+        image_path: uploadedPath,
+        video_path: null,
+        video_url: null,
+        media_type: 'image',
+        requires_pro: false,
+        active: true,
+      })
+      setWorkouts((current) => [workout, ...current])
+      setWorkoutId(workout.id)
+      setQuickTitle('')
+      setQuickDescription('')
+      setQuickImage(null)
+      setShowQuickCreate(false)
+      if (quickImageRef.current) quickImageRef.current.value = ''
+      showToast('Entrenamiento creado y seleccionado para este día')
+    } catch (error) {
+      if (uploadedPath) {
+        await workoutsService.removeImage(uploadedPath).catch(() => undefined)
+      }
+      showToast(toFriendlyMessage(error), 'error')
+    } finally {
+      setCreatingWorkout(false)
     }
   }
 
@@ -187,7 +280,7 @@ export function AdminDailyPlanPage() {
     <>
       <AdminSection
         title="Plan diario"
-        description="Elige lo que verán las alumnas en Inicio durante cada día planificado."
+        description="Asigna fecha y hora. El entrenamiento aparecerá en Inicio y en el calendario de las alumnas."
         actions={
           <>
             <Link to="/gestion/entrenos" className={linkClasses}>
@@ -222,6 +315,14 @@ export function AdminDailyPlanPage() {
             </Button>
           </div>
 
+          <Input
+            id="daily-plan-time"
+            type="time"
+            label="Hora del entrenamiento"
+            value={planTime}
+            onChange={(event) => setPlanTime(event.target.value)}
+          />
+
           <p className="rounded-xl border border-line-lime bg-green-deep/40 px-3.5 py-3 font-medium capitalize text-ink">
             {formatFullClassDate(selectedDate)}
             {currentPlan && (
@@ -237,8 +338,69 @@ export function AdminDailyPlanPage() {
             options={workoutOptions}
             value={workoutId}
             onChange={(event) => setWorkoutId(event.target.value)}
-            hint="Solo aparecen vídeos publicados."
+            hint="Aparecen entrenamientos publicados en imagen o vídeo."
           />
+          <Button
+            variant="secondary"
+            onClick={() => setShowQuickCreate((current) => !current)}
+          >
+            {showQuickCreate ? 'Cerrar creación rápida' : '+ Crear uno nuevo con imagen'}
+          </Button>
+
+          {showQuickCreate && (
+            <div className="flex flex-col gap-3 rounded-xl border border-line-lime bg-green-deep/30 p-4">
+              <p className="font-display text-base text-ink">
+                Nuevo entrenamiento en imagen
+              </p>
+              <Input
+                id="quick-workout-title"
+                label="Nombre"
+                value={quickTitle}
+                onChange={(event) => setQuickTitle(event.target.value)}
+                placeholder="Ladder 10–1"
+              />
+              <Textarea
+                id="quick-workout-description"
+                label="Descripción (opcional)"
+                value={quickDescription}
+                onChange={(event) => setQuickDescription(event.target.value)}
+                rows={2}
+              />
+              <div>
+                <label
+                  htmlFor="quick-workout-image"
+                  className="mb-1.5 block text-sm font-medium text-ink-soft"
+                >
+                  Imagen del entrenamiento
+                </label>
+                <input
+                  ref={quickImageRef}
+                  id="quick-workout-image"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="block w-full text-sm text-ink-muted file:mr-3 file:rounded-lg file:border-0 file:bg-lime file:px-3 file:py-2 file:text-sm file:font-semibold file:text-black"
+                  onChange={(event) => setQuickImage(event.target.files?.[0] ?? null)}
+                />
+                <p className="mt-1 text-xs text-ink-muted">
+                  JPG, PNG o WebP · máximo 10 MB.
+                </p>
+              </div>
+              {quickPreviewUrl && (
+                <WorkoutImageViewer
+                  src={quickPreviewUrl}
+                  title="Vista previa"
+                  ratio="auto"
+                />
+              )}
+              <Button
+                variant="primary"
+                loading={creatingWorkout}
+                onClick={() => void handleQuickCreateWorkout()}
+              >
+                Crear y seleccionar
+              </Button>
+            </div>
+          )}
           <Select
             id="daily-plan-post"
             label="Publicación del día"
@@ -315,19 +477,17 @@ export function AdminDailyPlanPage() {
             )}
             {selectedWorkout && (
               <Card className="overflow-hidden p-0">
-                {videoUrl ? (
+                {selectedWorkout.media_type === 'video' && videoUrl ? (
                   <WorkoutVideoPlayer
                     src={videoUrl}
                     poster={selectedWorkout.poster_url}
                     title={selectedWorkout.title}
                   />
                 ) : (
-                  <PosterImage
-                    src={selectedWorkout.poster_url}
-                    alt={selectedWorkout.title}
-                    ratio="4/5"
-                    fit="cover"
-                    className="w-full"
+                  <WorkoutImageViewer
+                    src={workoutsService.resolveImageUrl(selectedWorkout)}
+                    title={selectedWorkout.title}
+                    ratio="auto"
                   />
                 )}
                 <div className="p-4">
@@ -370,7 +530,8 @@ export function AdminDailyPlanPage() {
                   >
                     <div className="min-w-0">
                       <p className="font-semibold capitalize text-ink">
-                        {formatFullClassDate(plan.plan_date)}
+                        {formatFullClassDate(plan.plan_date)} ·{' '}
+                        {plan.plan_time.slice(0, 5)}
                       </p>
                       <p className="truncate text-xs text-ink-muted">
                         {[workout?.title, post?.title].filter(Boolean).join(' · ') ||
