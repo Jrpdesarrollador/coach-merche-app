@@ -55,9 +55,11 @@ export function useClassesMonth(year: number, month: number): ClassesMonthState 
     }
 
     void load()
+    const unsubscribe = classesService.subscribe(() => void load())
 
     return () => {
       cancelled = true
+      unsubscribe()
     }
   }, [year, month])
 

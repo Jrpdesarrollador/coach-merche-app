@@ -70,6 +70,19 @@ async function listRange(start: string, end: string): Promise<DailyPlan[]> {
   return data ?? []
 }
 
+async function listAll(): Promise<DailyPlan[]> {
+  if (!isSupabaseConfigured) return []
+
+  const { data, error } = await supabase
+    .from('daily_plans')
+    .select('*')
+    .order('plan_date', { ascending: false })
+    .order('plan_time', { ascending: false })
+
+  if (error) throw serviceError(error)
+  return data ?? []
+}
+
 async function listScheduledRange(
   start: string,
   end: string,
@@ -154,6 +167,27 @@ async function remove(id: string): Promise<void> {
   if (error) throw serviceError(error)
 }
 
+async function removeWorkoutFromDay(plan: DailyPlan): Promise<void> {
+  if (!plan.workout_id) {
+    await remove(plan.id)
+    return
+  }
+
+  const hasOtherContent = Boolean(plan.post_id || plan.note?.trim())
+  if (!hasOtherContent) {
+    await remove(plan.id)
+    return
+  }
+
+  if (!isSupabaseConfigured) return
+  const { error } = await supabase
+    .from('daily_plans')
+    .update({ workout_id: null })
+    .eq('id', plan.id)
+
+  if (error) throw serviceError(error)
+}
+
 function subscribe(onChange: () => void): () => void {
   if (!isSupabaseConfigured) return () => undefined
 
@@ -177,9 +211,11 @@ export const dailyPlansService = {
   getForDate,
   getContentForDate,
   listRange,
+  listAll,
   listScheduledRange,
   save,
   notifyPlanSaved,
   remove,
+  removeWorkoutFromDay,
   subscribe,
 }

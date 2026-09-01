@@ -58,9 +58,14 @@ function AdminClassesListView() {
                   </p>
                   <p className="mt-1 text-xs text-ink-muted">{cls.location}</p>
                 </div>
-                <Badge tone={(availability?.booked_count ?? 0) > 0 ? 'lime' : 'neutral'}>
-                  {availability?.booked_count ?? 0} apuntadas
-                </Badge>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <Badge
+                    tone={(availability?.booked_count ?? 0) > 0 ? 'lime' : 'neutral'}
+                  >
+                    {availability?.booked_count ?? 0} apuntadas
+                  </Badge>
+                  <span className="text-xs font-semibold text-lime">Editar →</span>
+                </div>
               </div>
             </Card>
           </Link>

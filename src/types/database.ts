@@ -469,6 +469,10 @@ export interface Database {
         Args: { p_class_id: string }
         Returns: Database['public']['Tables']['class_bookings']['Row']
       }
+      admin_cancel_class: {
+        Args: { p_class_id: string }
+        Returns: number
+      }
       workout_count: {
         Args: { p_user_id: string }
         Returns: number

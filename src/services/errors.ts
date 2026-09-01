@@ -87,6 +87,9 @@ const messagesByFragment: [string, string][] = [
   ['class_full', 'Lo sentimos, la clase está completa.'],
   ['already_booked', 'Ya estás apuntada a esta clase.'],
   ['booking_not_found', 'No tienes reserva activa en esta clase.'],
+  ['invalid_class_schedule', 'Las clases deben ser martes o jueves a las 19:00.'],
+  ['class_already_completed', 'Una clase ya completada no se puede eliminar.'],
+  ['forbidden', 'No tienes permiso para hacer esto.'],
 
   // Membresía admin
   ['invalid_tier', 'El plan seleccionado no es válido.'],

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { DumbbellIcon } from '@/components/icons'
 import {
   Badge,
@@ -42,7 +43,9 @@ function formatFileSize(bytes: number): string {
 
 export function AdminWorkoutsPage() {
   const { showToast } = useToast()
+  const [searchParams] = useSearchParams()
   const fileRef = useRef<HTMLInputElement>(null)
+  const handledEditRef = useRef<string | null>(null)
   const [workouts, setWorkouts] = useState<AdminWorkout[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -83,6 +86,28 @@ export function AdminWorkoutsPage() {
   useEffect(() => {
     void reload().finally(() => setLoading(false))
   }, [])
+
+  const requestedEditWorkoutId = searchParams.get('edit')
+
+  useEffect(() => {
+    if (loading || !requestedEditWorkoutId) return
+    if (handledEditRef.current === requestedEditWorkoutId) return
+
+    const workout = workouts.find((item) => item.id === requestedEditWorkoutId)
+    if (!workout) return
+
+    handledEditRef.current = requestedEditWorkoutId
+    setEditingWorkout(workout)
+    setTitle(workout.title)
+    setDescription(workout.description ?? '')
+    setPosterUrl(workout.poster_url)
+    setMediaType(workout.media_type)
+    setMediaFile(null)
+    setUploadProgress(0)
+    setUploadStatus('')
+    if (fileRef.current) fileRef.current.value = ''
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [loading, requestedEditWorkoutId, workouts])
 
   function resetForm() {
     setTitle('')

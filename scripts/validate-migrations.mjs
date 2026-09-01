@@ -247,6 +247,7 @@ async function runSmokeTests(db) {
   const beforeRecurring = await db.query(
     'select count(*)::int as total from public.classes',
   )
+  await signInAs()
   await db.query('select public.ensure_recurring_classes(12)')
   const afterRecurring = await db.query(
     'select count(*)::int as total from public.classes',
@@ -271,6 +272,89 @@ async function runSmokeTests(db) {
     'No quedan clases futuras fuera de mar/jue 19:00',
     wrongSchedule.rows[0].total === 0,
     `fuera_de_horario=${wrongSchedule.rows[0].total}`,
+  )
+
+  // ---- Admin cancela una fecha recurrente concreta ---------------------
+  await signInAs()
+  const recurringToCancel = await db.query(`
+    select
+      c.id,
+      c.date::text as date,
+      c.start_time::text as start_time,
+      c.workout_id
+    from public.classes c
+    join public.class_availability a on a.class_id = c.id
+    where c.status = 'scheduled'
+      and (c.date + c.start_time) >= (now() at time zone 'Europe/Madrid')
+      and a.available_count > 0
+      and not exists (
+        select 1
+        from public.class_bookings b
+        where b.class_id = c.id
+          and b.user_id = '${ANA}'
+          and b.status = 'active'
+      )
+    order by c.date, c.start_time
+    limit 1
+  `)
+  const recurringClass = recurringToCancel.rows[0]
+
+  await signInAs(ANA)
+  await db.query(`select public.book_class('${recurringClass.id}')`)
+  const cancelForbidden = await expectFailure(
+    `select public.admin_cancel_class('${recurringClass.id}')`,
+    'FORBIDDEN',
+  )
+  check(
+    'Una alumna no puede eliminar una clase recurrente',
+    cancelForbidden.ok,
+    cancelForbidden.detail,
+  )
+
+  await signInAs(MERCHE)
+  const cancelledByAdmin = await db.query(
+    `select public.admin_cancel_class('${recurringClass.id}') as total`,
+  )
+  const cancelledClassState = await db.query(`
+    select
+      c.status,
+      b.status as booking_status,
+      exists (
+        select 1
+        from public.notifications n
+        where n.user_id = '${ANA}'
+          and n.type = 'custom'
+          and n.metadata->>'class_id' = '${recurringClass.id}'
+      ) as notified
+    from public.classes c
+    join public.class_bookings b on b.class_id = c.id and b.user_id = '${ANA}'
+    where c.id = '${recurringClass.id}'
+  `)
+  check(
+    'Merche elimina una clase concreta, cancela reservas y avisa',
+    cancelledByAdmin.rows[0].total === 1 &&
+      cancelledClassState.rows[0].status === 'cancelled' &&
+      cancelledClassState.rows[0].booking_status === 'cancelled' &&
+      cancelledClassState.rows[0].notified === true,
+    JSON.stringify({
+      result: cancelledByAdmin.rows[0],
+      state: cancelledClassState.rows[0],
+    }),
+  )
+
+  await signInAs()
+  await db.query('select public.ensure_recurring_classes(12)')
+  const cancelledClassCount = await db.query(`
+    select count(*)::int as total
+    from public.classes
+    where date = '${recurringClass.date}'
+      and start_time = '${recurringClass.start_time}'
+      and workout_id = '${recurringClass.workout_id}'
+  `)
+  check(
+    'La clase cancelada no reaparece al regenerar la serie',
+    cancelledClassCount.rows[0].total === 1,
+    JSON.stringify(cancelledClassCount.rows[0]),
   )
 
   // ---- Clase con una sola plaza -----------------------------------------

@@ -1,42 +1,87 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeftIcon, UsersIcon } from '@/components/icons'
-import { Avatar, Badge, Button, Card, EmptyState, Select, Skeleton } from '@/components/ui'
-import { useToast } from '@/hooks/useToast'
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  EmptyState,
+  Input,
+  Select,
+  Skeleton,
+  Textarea,
+} from '@/components/ui'
 import { bookingSourceLabels } from '@/features/admin/adminLabels'
-import { adminService, classesService, manualAdminService, toFriendlyMessage } from '@/services'
-import type { AdminProfile, ClassParticipant } from '@/types'
-import { formatClassDate, formatClassTime, formatShortDate } from '@/utils/datetime'
+import { SelectedWorkoutEditor } from '@/features/admin/components/SelectedWorkoutEditor'
+import { useToast } from '@/hooks/useToast'
+import {
+  adminService,
+  classesService,
+  manualAdminService,
+  toFriendlyMessage,
+  workoutsService,
+} from '@/services'
+import type { AdminProfile, ClassParticipant, ClassRow, Workout } from '@/types'
+import {
+  formatClassDate,
+  formatClassTime,
+  formatShortDate,
+  todayISO,
+} from '@/utils/datetime'
 
 function displayName(name: string, lastName: string | null): string {
   return [name, lastName].filter(Boolean).join(' ')
 }
 
+function isAllowedClassDate(date: string): boolean {
+  const day = new Date(`${date}T12:00:00Z`).getUTCDay()
+  return day === 2 || day === 4
+}
+
 export function AdminClassDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const { showToast } = useToast()
+  const [classRow, setClassRow] = useState<ClassRow | null>(null)
   const [participants, setParticipants] = useState<ClassParticipant[]>([])
   const [profiles, setProfiles] = useState<AdminProfile[]>([])
-  const [classTitle, setClassTitle] = useState('')
-  const [classMeta, setClassMeta] = useState('')
+  const [workouts, setWorkouts] = useState<Workout[]>([])
+  const [workoutId, setWorkoutId] = useState('')
+  const [classDate, setClassDate] = useState('')
+  const [startTime, setStartTime] = useState('19:00')
+  const [location, setLocation] = useState('')
+  const [capacity, setCapacity] = useState('16')
+  const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(true)
+  const [savingClass, setSavingClass] = useState(false)
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [cancellingClass, setCancellingClass] = useState(false)
   const [assignUserId, setAssignUserId] = useState('')
   const [assigning, setAssigning] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
 
   async function reload(classId: string) {
-    const [rows, profileRows, detail] = await Promise.all([
+    const [rows, profileRows, detail, workoutRows] = await Promise.all([
       adminService.getClassParticipants(classId),
       adminService.listProfiles(),
       classesService.getClassById(classId),
+      workoutsService.listAll(),
     ])
+
     setParticipants(rows)
     setProfiles(profileRows.filter((profile) => profile.role === 'user'))
+    setWorkouts(workoutRows)
+
     if (detail) {
-      setClassTitle(detail.workout.title)
-      setClassMeta(
-        `${formatClassDate(detail.class.date)} · ${formatClassTime(detail.class.start_time)} · ${detail.class.location}`,
-      )
+      setClassRow(detail.class)
+      setWorkoutId(detail.class.workout_id)
+      setClassDate(detail.class.date)
+      setStartTime(detail.class.start_time.slice(0, 5))
+      setLocation(detail.class.location)
+      setCapacity(String(detail.class.capacity))
+      setNotes(detail.class.notes ?? '')
     }
   }
 
@@ -45,9 +90,81 @@ export function AdminClassDetailPage() {
     void reload(id).finally(() => setLoading(false))
   }, [id])
 
+  const selectedWorkout =
+    workouts.find((workout) => workout.id === workoutId) ?? null
+
+  const workoutOptions = useMemo(
+    () =>
+      workouts
+        .filter((workout) => workout.active || workout.id === workoutId)
+        .map((workout) => ({
+          value: workout.id,
+          label: `${workout.title}${workout.active ? '' : ' (oculto)'}`,
+        })),
+    [workoutId, workouts],
+  )
+
   const availableStudents = profiles.filter(
     (profile) => !participants.some((participant) => participant.user_id === profile.id),
   )
+
+  async function handleSaveClass() {
+    if (!id || !classRow) return
+    const numericCapacity = Number(capacity)
+
+    if (!workoutId || !classDate || !location.trim()) {
+      showToast('Completa el entrenamiento, la fecha y el lugar.', 'error')
+      return
+    }
+    if (!isAllowedClassDate(classDate) || startTime !== '19:00') {
+      showToast('Las clases se mantienen los martes o jueves a las 19:00.', 'error')
+      return
+    }
+    if (!Number.isInteger(numericCapacity) || numericCapacity < participants.length) {
+      showToast(
+        `Las plazas no pueden ser inferiores a las ${participants.length} reservas actuales.`,
+        'error',
+      )
+      return
+    }
+
+    setSavingClass(true)
+    try {
+      await classesService.updateClass(id, {
+        workout_id: workoutId,
+        date: classDate,
+        start_time: startTime,
+        location: location.trim(),
+        capacity: numericCapacity,
+        notes: notes.trim() || null,
+      })
+      await reload(id)
+      showToast('Clase actualizada para todas las alumnas')
+    } catch (error) {
+      showToast(toFriendlyMessage(error), 'error')
+    } finally {
+      setSavingClass(false)
+    }
+  }
+
+  async function handleCancelClass() {
+    if (!id) return
+    setCancellingClass(true)
+    try {
+      const cancelledBookings = await classesService.cancelClass(id)
+      showToast(
+        cancelledBookings > 0
+          ? `Clase eliminada y ${cancelledBookings} reserva${cancelledBookings === 1 ? '' : 's'} cancelada${cancelledBookings === 1 ? '' : 's'}`
+          : 'Clase eliminada del calendario',
+      )
+      navigate('/gestion/clases', { replace: true })
+    } catch (error) {
+      showToast(toFriendlyMessage(error), 'error')
+    } finally {
+      setCancellingClass(false)
+      setShowCancelDialog(false)
+    }
+  }
 
   async function handleAssign() {
     if (!id || !assignUserId) {
@@ -94,6 +211,16 @@ export function AdminClassDetailPage() {
     )
   }
 
+  if (!classRow) {
+    return (
+      <EmptyState
+        title="Clase no encontrada"
+        description="Puede que esta clase ya no exista."
+        icon={<UsersIcon width={24} height={24} />}
+      />
+    )
+  }
+
   return (
     <section className="flex flex-col gap-4">
       <Link
@@ -105,9 +232,97 @@ export function AdminClassDetailPage() {
       </Link>
 
       <div>
-        <h2 className="font-display text-2xl text-ink">{classTitle || 'Detalle de clase'}</h2>
-        {classMeta && <p className="mt-1 text-sm text-ink-muted">{classMeta}</p>}
+        <h2 className="font-display text-2xl text-ink">
+          {selectedWorkout?.title ?? 'Detalle de clase'}
+        </h2>
+        <p className="mt-1 text-sm text-ink-muted">
+          {formatClassDate(classRow.date)} · {formatClassTime(classRow.start_time)} ·{' '}
+          {classRow.location}
+        </p>
       </div>
+
+      <Card highlight className="flex flex-col gap-4">
+        <div>
+          <p className="font-display text-lg text-ink">Editar esta clase</p>
+          <p className="mt-1 text-xs text-ink-muted">
+            Los cambios afectan únicamente a esta fecha de martes o jueves.
+          </p>
+        </div>
+        <Select
+          id="class-workout"
+          label="Entrenamiento"
+          value={workoutId}
+          options={workoutOptions}
+          onChange={(event) => setWorkoutId(event.target.value)}
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input
+            id="class-date"
+            type="date"
+            min={todayISO()}
+            label="Fecha"
+            value={classDate}
+            onChange={(event) => setClassDate(event.target.value)}
+          />
+          <Input
+            id="class-time"
+            type="time"
+            label="Hora"
+            value={startTime}
+            onChange={(event) => setStartTime(event.target.value)}
+            hint="Horario establecido: 19:00."
+          />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input
+            id="class-location"
+            label="Lugar"
+            value={location}
+            onChange={(event) => setLocation(event.target.value)}
+          />
+          <Input
+            id="class-capacity"
+            type="number"
+            min={participants.length || 1}
+            max={200}
+            label="Número de plazas"
+            value={capacity}
+            onChange={(event) => setCapacity(event.target.value)}
+          />
+        </div>
+        <Textarea
+          id="class-notes"
+          label="Notas de la clase"
+          rows={3}
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="primary"
+            loading={savingClass}
+            onClick={() => void handleSaveClass()}
+          >
+            Guardar cambios
+          </Button>
+          <Button variant="danger" onClick={() => setShowCancelDialog(true)}>
+            Eliminar esta clase
+          </Button>
+        </div>
+      </Card>
+
+      {selectedWorkout && (
+        <SelectedWorkoutEditor
+          workout={selectedWorkout}
+          onUpdated={(updated) => {
+            setWorkouts((current) =>
+              current.map((workout) =>
+                workout.id === updated.id ? updated : workout,
+              ),
+            )
+          }}
+        />
+      )}
 
       <Card highlight>
         <p className="mb-3 font-display text-lg text-ink">Apuntar alumna tú misma</p>
@@ -167,9 +382,13 @@ export function AdminClassDetailPage() {
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <Badge tone={isManualBooking ? 'warning' : 'lime'}>
-                      {isManualBooking ? bookingSourceLabels.manual : bookingSourceLabels.app}
+                      {isManualBooking
+                        ? bookingSourceLabels.manual
+                        : bookingSourceLabels.app}
                     </Badge>
-                    {participant.is_manual && <Badge tone="neutral">Sin app aún</Badge>}
+                    {participant.is_manual && (
+                      <Badge tone="neutral">Sin app aún</Badge>
+                    )}
                     {participant.attendance_confirmed_at && (
                       <Badge tone={participant.attended ? 'lime' : 'neutral'}>
                         {participant.attended ? 'Asistió' : 'No asistió'}
@@ -190,6 +409,17 @@ export function AdminClassDetailPage() {
           </ul>
         )}
       </Card>
+
+      <ConfirmDialog
+        open={showCancelDialog}
+        title="Eliminar esta clase"
+        message={`Se quitará del calendario la clase del ${formatClassDate(classRow.date)}. Solo se eliminará esta fecha; el resto de martes y jueves seguirán igual. Las alumnas apuntadas recibirán un aviso.`}
+        confirmLabel="Sí, eliminar esta clase"
+        destructive
+        loading={cancellingClass}
+        onCancel={() => setShowCancelDialog(false)}
+        onConfirm={() => void handleCancelClass()}
+      />
     </section>
   )
 }

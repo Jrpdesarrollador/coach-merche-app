@@ -13,6 +13,7 @@ import {
   Textarea,
 } from '@/components/ui'
 import { AdminSection } from '@/features/admin/components/AdminSection'
+import { SelectedWorkoutEditor } from '@/features/admin/components/SelectedWorkoutEditor'
 import { WorkoutVideoPlayer } from '@/features/workouts/WorkoutVideoPlayer'
 import { WorkoutImageViewer } from '@/features/workouts/WorkoutImageViewer'
 import { useToast } from '@/hooks/useToast'
@@ -30,6 +31,7 @@ const linkClasses =
 
 export function AdminDailyPlanPage() {
   const { showToast } = useToast()
+  const planEditorRef = useRef<HTMLDivElement>(null)
   const quickImageRef = useRef<HTMLInputElement>(null)
   const [plans, setPlans] = useState<DailyPlan[]>([])
   const [workouts, setWorkouts] = useState<Workout[]>([])
@@ -62,18 +64,17 @@ export function AdminDailyPlanPage() {
     }
   }, [quickPreviewUrl])
 
-  const rangeEnd = addDaysISO(todayISO(), 30)
   const currentPlan = plans.find((plan) => plan.plan_date === selectedDate) ?? null
   const selectedWorkout = workouts.find((workout) => workout.id === workoutId) ?? null
   const selectedPost = posts.find((post) => post.id === postId) ?? null
 
   async function reloadPlans() {
-    setPlans(await dailyPlansService.listRange(todayISO(), rangeEnd))
+    setPlans(await dailyPlansService.listAll())
   }
 
   useEffect(() => {
     Promise.all([
-      dailyPlansService.listRange(todayISO(), rangeEnd),
+      dailyPlansService.listAll(),
       workoutsService.listAll(),
       postsService.listAll(),
     ])
@@ -84,7 +85,7 @@ export function AdminDailyPlanPage() {
       })
       .catch((error) => showToast(toFriendlyMessage(error), 'error'))
       .finally(() => setLoading(false))
-  }, [rangeEnd, showToast])
+  }, [showToast])
 
   useEffect(() => {
     const plan = plans.find((item) => item.plan_date === selectedDate)
@@ -254,14 +255,26 @@ export function AdminDailyPlanPage() {
     }
   }
 
+  function editPlan(plan: DailyPlan) {
+    setSelectedDate(plan.plan_date)
+    window.requestAnimationFrame(() => {
+      planEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
   async function handleDelete() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      await dailyPlansService.remove(deleteTarget.id)
+      const removedWorkout = Boolean(deleteTarget.workout_id)
+      await dailyPlansService.removeWorkoutFromDay(deleteTarget)
       setDeleteTarget(null)
       await reloadPlans()
-      showToast('Plan diario eliminado')
+      showToast(
+        removedWorkout
+          ? 'Entrenamiento quitado del día; sigue disponible en la biblioteca'
+          : 'Plan diario eliminado',
+      )
     } catch (error) {
       showToast(toFriendlyMessage(error), 'error')
     } finally {
@@ -292,12 +305,12 @@ export function AdminDailyPlanPage() {
           </>
         }
       >
-        <Card className="flex flex-col gap-4">
+        <div ref={planEditorRef} className="scroll-mt-4">
+          <Card className="flex flex-col gap-4">
           <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
             <Input
               id="daily-plan-date"
               type="date"
-              min={todayISO()}
               label="Día del entrenamiento"
               value={selectedDate}
               onChange={(event) => {
@@ -340,6 +353,18 @@ export function AdminDailyPlanPage() {
             onChange={(event) => setWorkoutId(event.target.value)}
             hint="Aparecen entrenamientos publicados en imagen o vídeo."
           />
+          {selectedWorkout && (
+            <SelectedWorkoutEditor
+              workout={selectedWorkout}
+              onUpdated={(updated) =>
+                setWorkouts((current) =>
+                  current.map((workout) =>
+                    workout.id === updated.id ? updated : workout,
+                  ),
+                )
+              }
+            />
+          )}
           <Button
             variant="secondary"
             onClick={() => setShowQuickCreate((current) => !current)}
@@ -425,11 +450,14 @@ export function AdminDailyPlanPage() {
             </Button>
             {currentPlan && (
               <Button variant="danger" onClick={() => setDeleteTarget(currentPlan)}>
-                Eliminar este día
+                {currentPlan.workout_id
+                  ? 'Quitar entrenamiento de este día'
+                  : 'Eliminar este día'}
               </Button>
             )}
           </div>
-        </Card>
+          </Card>
+        </div>
       </AdminSection>
 
       {(selectedWorkout || selectedPost || note.trim()) && (
@@ -508,8 +536,8 @@ export function AdminDailyPlanPage() {
       )}
 
       <AdminSection
-        title="Próximos 30 días"
-        description="Toca un día para revisar o cambiar su contenido."
+        title="Todos los días planificados"
+        description="Edita o quita directamente cualquier entrenamiento, también de fechas pasadas."
       >
         {plans.length === 0 ? (
           <EmptyState
@@ -523,11 +551,7 @@ export function AdminDailyPlanPage() {
               const post = posts.find((item) => item.id === plan.post_id)
               return (
                 <li key={plan.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDate(plan.plan_date)}
-                    className="flex min-h-16 w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3.5 py-3 text-left transition-colors hover:border-line-lime"
-                  >
+                  <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className="font-semibold capitalize text-ink">
                         {formatFullClassDate(plan.plan_date)} ·{' '}
@@ -538,8 +562,23 @@ export function AdminDailyPlanPage() {
                           'Solo mensaje'}
                       </p>
                     </div>
-                    <span className="shrink-0 text-lime">Editar →</span>
-                  </button>
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => editPlan(plan)}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => setDeleteTarget(plan)}
+                      >
+                        {plan.workout_id ? 'Quitar entreno' : 'Eliminar día'}
+                      </Button>
+                    </div>
+                  </div>
                 </li>
               )
             })}
@@ -552,10 +591,14 @@ export function AdminDailyPlanPage() {
         title="Eliminar planificación"
         message={
           deleteTarget
-            ? `Se quitará el contenido asignado al ${formatFullClassDate(deleteTarget.plan_date)}. Los vídeos y publicaciones originales no se borrarán.`
+            ? deleteTarget.workout_id
+              ? `Se quitará del calendario el entrenamiento del ${formatFullClassDate(deleteTarget.plan_date)}. Seguirá guardado en la biblioteca para poder reutilizarlo y se conservarán el mensaje o la publicación de ese día.`
+              : `Se eliminará la planificación del ${formatFullClassDate(deleteTarget.plan_date)}.`
             : ''
         }
-        confirmLabel="Sí, eliminar el día"
+        confirmLabel={
+          deleteTarget?.workout_id ? 'Sí, quitar entrenamiento' : 'Sí, eliminar el día'
+        }
         destructive
         loading={deleting}
         onCancel={() => setDeleteTarget(null)}

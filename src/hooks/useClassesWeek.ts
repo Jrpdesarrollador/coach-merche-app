@@ -57,9 +57,11 @@ export function useClassesWeek(weekStart: string): ClassesWeekState {
     }
 
     void load()
+    const unsubscribe = classesService.subscribe(() => void load())
 
     return () => {
       cancelled = true
+      unsubscribe()
     }
   }, [weekStart])
 

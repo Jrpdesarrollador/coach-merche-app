@@ -1,5 +1,11 @@
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
-import type { ClassAvailability, ClassBooking, ClassRow, Workout } from '@/types'
+import type {
+  ClassAvailability,
+  ClassBooking,
+  ClassRow,
+  Database,
+  Workout,
+} from '@/types'
 import { isUpcomingClass, todayISO } from '@/utils/datetime'
 import { bookingsService } from './bookingsService'
 import { serviceError } from './errors'
@@ -9,6 +15,8 @@ export interface ClassWithWorkout {
   workout: Workout
   availability: ClassAvailability | null
 }
+
+type ClassUpdate = Database['public']['Tables']['classes']['Update']
 
 async function getAvailability(classId: string): Promise<ClassAvailability | null> {
   const { data, error } = await supabase
@@ -175,10 +183,59 @@ async function getUserBookingForClass(
   return bookingsService.getActiveForClass(userId, classId)
 }
 
+async function updateClass(id: string, patch: ClassUpdate): Promise<ClassRow> {
+  if (!isSupabaseConfigured) {
+    throw serviceError(new Error('Supabase no configurado'))
+  }
+
+  const { data, error } = await supabase
+    .from('classes')
+    .update(patch)
+    .eq('id', id)
+    .select('*')
+    .single()
+
+  if (error) throw serviceError(error)
+  return data
+}
+
+async function cancelClass(id: string): Promise<number> {
+  if (!isSupabaseConfigured) {
+    throw serviceError(new Error('Supabase no configurado'))
+  }
+
+  const { data, error } = await supabase.rpc('admin_cancel_class', {
+    p_class_id: id,
+  })
+
+  if (error) throw serviceError(error)
+  return data ?? 0
+}
+
+function subscribe(onChange: () => void): () => void {
+  if (!isSupabaseConfigured) return () => undefined
+
+  const channel = supabase
+    .channel(`classes-${crypto.randomUUID()}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'classes' },
+      onChange,
+    )
+    .subscribe()
+
+  return () => {
+    void supabase.removeChannel(channel)
+  }
+}
+
 export const classesService = {
   getNextUpcoming,
   listClassesForWeek,
   listClassesForMonth,
   getClassById,
   getUserBookingForClass,
+  updateClass,
+  cancelClass,
+  subscribe,
 }

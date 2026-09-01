@@ -82,7 +82,7 @@ export function ClassListItem({
       </div>
       <p className="text-xs text-ink-soft">
         {showBookingCount
-          ? `${bookedCount} / ${capacity} plazas`
+          ? `${bookedCount} / ${capacity} plazas · Toca para editar o eliminar`
           : badgeState === 'full'
             ? 'Sin plazas libres'
             : badgeState === 'past'
