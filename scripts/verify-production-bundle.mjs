@@ -41,7 +41,10 @@ async function main() {
   const supabaseUrls = [...js.matchAll(/https:\/\/[a-z0-9]+\.supabase\.co/g)].map((m) => m[0])
   const realUrls = supabaseUrls.filter((u) => !u.includes('placeholder'))
 
-  if (hasPlaceholder || hasExampleUrl) {
+  // El bundle contiene deliberadamente los textos de ejemplo utilizados por
+  // el diagnóstico de configuración. Solo indican un build roto cuando no
+  // aparece además ninguna URL real de Supabase.
+  if ((hasPlaceholder || hasExampleUrl) && realUrls.length === 0) {
     console.error('')
     console.error('❌ Supabase NO configurado en el bundle publicado.')
     if (hasPlaceholder) console.error('   • Encontrado: placeholder.supabase.co')
