@@ -159,6 +159,7 @@ export interface Database {
       classes: {
         Row: {
           id: string
+          daily_plan_id: string | null
           workout_id: string
           date: string
           start_time: string
@@ -172,6 +173,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          daily_plan_id?: string | null
           workout_id: string
           date: string
           start_time: string

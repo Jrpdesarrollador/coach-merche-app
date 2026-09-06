@@ -783,6 +783,20 @@ async function runSmokeTests(db) {
     adminDailyPlans.rows[0]?.total === 2,
   )
 
+  const classesCreatedFromPlans = await db.query(`
+    select c.id, c.date, c.start_time, c.status, c.daily_plan_id
+    from public.classes c
+    join public.daily_plans dp on dp.id = c.daily_plan_id
+    where dp.plan_date >= (now() at time zone 'Europe/Madrid')::date
+    order by c.date
+  `)
+  check(
+    'Cada entrenamiento planificado crea automáticamente una clase reservable',
+    classesCreatedFromPlans.rows.length === 2 &&
+      classesCreatedFromPlans.rows.every((row) => row.status === 'scheduled'),
+    JSON.stringify(classesCreatedFromPlans.rows),
+  )
+
   await signInAs(ANA)
   const visibleDailyPlans = await db.query(
     `select plan_date, plan_time, workout_id, post_id from public.daily_plans order by plan_date`,
@@ -799,6 +813,17 @@ async function runSmokeTests(db) {
     'Una alumna ve anticipadamente el entrenamiento de mañana',
     visibleDailyPlans.rows[1]?.workout_id === WORKOUT &&
       String(visibleDailyPlans.rows[1]?.plan_time).startsWith('20:00'),
+  )
+
+  const tomorrowPlanClass = classesCreatedFromPlans.rows.find(
+    (row) => String(row.start_time).startsWith('20:00'),
+  )
+  const planBooking = await db.query(
+    `select (public.book_class('${tomorrowPlanClass?.id}')).status as status`,
+  )
+  check(
+    'Una alumna puede apuntarse a una clase creada desde el plan diario',
+    planBooking.rows[0]?.status === 'active',
   )
 
   const scheduledNotifications = await db.query(`

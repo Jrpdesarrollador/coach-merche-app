@@ -87,9 +87,32 @@ async function listScheduledRange(
   start: string,
   end: string,
 ): Promise<ScheduledDailyPlan[]> {
-  const plans = (await listRange(start, end)).filter(
+  let plans = (await listRange(start, end)).filter(
     (plan) => plan.active && Boolean(plan.workout_id),
   )
+
+  // Un plan con una clase sincronizada se muestra como clase reservable. El
+  // plan amarillo se conserva únicamente como respaldo si faltase la clase.
+  if (plans.length) {
+    const { data: linkedClasses, error } = await supabase
+      .from('classes')
+      .select('daily_plan_id')
+      .eq('status', 'scheduled')
+      .in(
+        'daily_plan_id',
+        plans.map((plan) => plan.id),
+      )
+
+    if (error) throw serviceError(error)
+
+    const linkedPlanIds = new Set(
+      (linkedClasses ?? []).flatMap((row) =>
+        row.daily_plan_id ? [row.daily_plan_id] : [],
+      ),
+    )
+    plans = plans.filter((plan) => !linkedPlanIds.has(plan.id))
+  }
+
   const workouts = await workoutsService.listByIds(
     plans.flatMap((plan) => (plan.workout_id ? [plan.workout_id] : [])),
   )
